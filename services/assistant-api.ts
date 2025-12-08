@@ -9,6 +9,12 @@ import type {
   WeatherData,
   LocationInput,
 } from '../types/assistant';
+import type {
+  HealthCoachRequest,
+  HealthCoachResponse,
+  SaveExcursionRequest,
+  SaveExcursionResponse,
+} from '../types/ai';
 
 const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -110,5 +116,37 @@ export const assistantAPI = {
 
     const data = await response.json();
     return data as WeatherData;
+  },
+
+  async sendToHealthCoach(request: HealthCoachRequest): Promise<HealthCoachResponse> {
+    const response = await fetch(`${supabaseUrl}/functions/v1/health-coach`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to send message to health coach: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data as HealthCoachResponse;
+  },
+
+  async saveExcursion(request: SaveExcursionRequest): Promise<SaveExcursionResponse> {
+    const response = await fetch(`${supabaseUrl}/functions/v1/save-excursion`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save excursion: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data as SaveExcursionResponse;
   },
 };
