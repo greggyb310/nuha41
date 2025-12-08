@@ -1,0 +1,338 @@
+This project workflow is Bolt.new to GitHub Repository to launch.expo.dev. There are no local files. It is all handled in the cloud. 
+
+The bundle ID is: com.natureup.health41
+
+# NatureUP Health - Architecture & Workflow
+
+## Project Overview
+
+NatureUP Health is a voice-first, mobile health app focused on personalized outdoor excursions and nature therapy. The app provides real-time wellness guidance through AI-powered voice coaching and generates custom nature therapy routes.
+
+## Platform & Deployment
+
+- **Primary Platform**: iOS (production)
+- **Development Preview**: Web (Bolt.new preview only)
+- **Development Workflow**: Bolt.new → GitHub → launch.expo.dev → EAS Build
+- **Distribution**: TestFlight → App Store
+
+## Tech Stack
+
+### Core Framework
+- **Expo SDK 54** - React Native framework
+- **React Native 0.76.5** - Mobile UI framework
+- **TypeScript** - Type safety
+- **expo-router v4** - File-based routing
+
+### Backend & Data
+- **Supabase** - Authentication & PostgreSQL database
+- **Supabase Edge Functions** - Serverless backend (weather API, OpenAI integration)
+- **OpenAI Assistants API** - AI-powered coaching (NOT Chat Completions API)
+
+### UI & Interaction
+- **StyleSheet.create()** - React Native styling (NO NativeWind/Tailwind)
+- **lucide-react-native** - Icons
+- **react-native-maps** - iOS maps (graceful web fallback)
+- **Voice Interface** - Primary interaction method (text as fallback)
+
+## Development Workflow
+
+### 1. Development in Bolt.new
+- All code written in Bolt.new AI assistant
+- Automatic commits to GitHub
+- No local terminal required
+
+### 2. Preview on iPhone
+1. Push code from Bolt.new → GitHub (automatic)
+2. Go to [launch.expo.dev](https://launch.expo.dev)
+3. Paste GitHub repository URL
+4. Scan QR code with iPhone camera
+5. Opens automatically in Expo Go app
+
+### 3. Production Builds
+```bash
+# EAS Build for TestFlight
+eas build --platform ios --profile preview
+
+# Submit to TestFlight
+eas submit --platform ios
+```
+
+## AI Architecture
+
+### Two OpenAI Assistants (using Assistants API)
+
+#### 1. Health Coach Assistant
+- **Purpose**: General wellness coaching
+- **Interaction**: Voice-first, real-time bidirectional audio
+- **Capabilities**: Full duplex communication (simultaneous speaking/listening)
+- **Context**: User profile, health goals, conversation history
+
+#### 2. Excursion Creator Assistant
+- **Purpose**: Generate personalized nature therapy routes
+- **Input**: User preferences, location, weather, health goals
+- **Output**: Custom outdoor excursion plans with waypoints
+- **Integration**: Weather API via Supabase Edge Function
+
+### Important: Use Assistants API, NOT Chat Completions
+- Stateful conversations with thread management
+- Function calling for external APIs
+- Persistent context across sessions
+
+## Database Architecture (Supabase PostgreSQL)
+
+### Schema Overview
+
+All tables use `snake_case` naming and have RLS enabled for security.
+
+### Tables
+
+#### `user_profiles`
+Stores user information, health goals, and preferences for personalization.
+
+**Columns:**
+- `id` (uuid, primary key) - Unique identifier
+- `user_id` (uuid, foreign key to auth.users) - References Supabase auth user
+- `full_name` (text, nullable) - User's display name
+- `health_goals` (text[], nullable) - Array of health objectives (e.g., ["reduce stress", "improve sleep"])
+- `preferences` (jsonb, nullable) - Flexible JSON for user settings
+- `created_at` (timestamptz) - Record creation timestamp
+- `updated_at` (timestamptz) - Last update timestamp
+
+**RLS Policies:**
+- Users can SELECT, UPDATE their own profile (`auth.uid() = user_id`)
+- Users can INSERT their own profile on signup
+
+#### `excursions`
+Stores AI-generated nature therapy routes and user-completed excursions.
+
+**Columns:**
+- `id` (uuid, primary key) - Unique identifier
+- `user_id` (uuid, foreign key to auth.users) - Route owner
+- `title` (text) - Excursion name (e.g., "Sunset Forest Walk")
+- `description` (text, nullable) - Detailed description of route and benefits
+- `route_data` (jsonb) - GeoJSON or structured waypoint data
+- `duration_minutes` (integer, nullable) - Expected duration
+- `distance_km` (numeric, nullable) - Total distance
+- `difficulty` (text, nullable) - "easy", "moderate", "challenging"
+- `created_at` (timestamptz) - When route was generated
+- `completed_at` (timestamptz, nullable) - When user completed the excursion
+
+**RLS Policies:**
+- Users can SELECT, INSERT, UPDATE, DELETE their own excursions
+
+#### `conversations`
+Tracks AI assistant conversations with metadata for continuity.
+
+**Columns:**
+- `id` (uuid, primary key) - Unique identifier
+- `user_id` (uuid, foreign key to auth.users) - Conversation owner
+- `assistant_type` (text) - "health_coach" or "excursion_creator"
+- `thread_id` (text) - OpenAI thread ID for stateful conversations
+- `message_count` (integer, default 0) - Number of messages in thread
+- `last_message_at` (timestamptz) - Last interaction timestamp
+- `created_at` (timestamptz) - Thread creation timestamp
+
+**RLS Policies:**
+- Users can SELECT, INSERT, UPDATE their own conversations
+- No DELETE (preserve conversation history)
+
+#### `favorite_excursions`
+Junction table for users to save favorite excursion routes.
+
+**Columns:**
+- `id` (uuid, primary key) - Unique identifier
+- `user_id` (uuid, foreign key to auth.users) - User who favorited
+- `excursion_id` (uuid, foreign key to excursions) - Favorited excursion
+- `created_at` (timestamptz) - When favorited
+
+**Constraints:**
+- Unique constraint on (`user_id`, `excursion_id`) - Prevent duplicate favorites
+
+**RLS Policies:**
+- Users can SELECT, INSERT, DELETE their own favorites
+
+### Indexes
+
+Performance indexes on frequently queried columns:
+- `user_profiles.user_id` - Fast user lookup
+- `excursions.user_id` - User's excursion list
+- `conversations.user_id` - User's conversation history
+- `conversations.thread_id` - OpenAI thread retrieval
+- `favorite_excursions.user_id` - User's favorites
+- `favorite_excursions.excursion_id` - Excursion popularity
+
+### Security
+
+- **Row Level Security (RLS)** enabled on ALL tables
+- **User isolation** via `auth.uid()` - users only access their own data
+- **API keys** stored in Supabase Edge Function secrets (NEVER in .env)
+- **Foreign keys** enforce referential integrity
+- **Timestamps** for audit trail and data freshness
+
+## API Key Management
+
+### Supabase Secrets (Server-side)
+Store all sensitive keys in Supabase Edge Function secrets:
+- `OPENAI_API_KEY` - OpenAI Assistants API
+- `WEATHER_API_KEY` - Weather service
+- Any other third-party API keys
+
+### Client Environment Variables (.env)
+Only public keys in client:
+```
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+**NEVER** store private API keys in `.env` - they are exposed in client bundles!
+
+## Design System
+
+### Color Palette (Nature Theme)
+- **Primary**: `#4A7C2E` (Nature Green)
+- **Background**: `#F5F8F3` (Light Green Tint)
+- **Text Primary**: `#2D3E1F` (Dark Forest Green)
+- **Text Secondary**: `#5A6C4A` (Medium Green)
+- **Accent**: `#7FA957` (Bright Green)
+- **Surface**: `#FFFFFF` (White cards)
+
+### Typography
+- **Headings**: Bold (600-700 weight)
+- **Body**: Regular (400 weight)
+- **Line Height**: 1.5 for body, 1.2 for headings
+
+### Components
+- Rounded corners (12-16px border radius)
+- Subtle shadows for elevation
+- Green accent buttons with white text
+- Card-based layouts with white backgrounds
+
+## Coding Standards
+
+### Naming Conventions
+- **Database**: `snake_case` (e.g., `user_profiles`, `favorite_excursions`)
+- **Components**: `PascalCase` (e.g., `ExcursionPlanCard`, `ChatMessage`)
+- **Files**: `kebab-case` for screens (e.g., `excursion-chat.tsx`, `profile-setup.tsx`)
+- **Variables**: `camelCase` (e.g., `userName`, `isLoading`)
+
+### File Organization
+- **Screens**: `/app/*.tsx` (expo-router routes)
+- **Components**: `/components/*.tsx` (reusable UI)
+- **Services**: `/services/*.ts` (API clients, Supabase helpers)
+- **Types**: `/types/*.ts` (TypeScript interfaces)
+- **Hooks**: `/hooks/*.ts` (custom React hooks)
+
+### Code Style
+- TypeScript strict mode enabled
+- No `any` types (use proper typing)
+- Functional components with hooks
+- Error handling with user-friendly messages
+- No `Alert` API - use inline error states
+- Platform-specific code using `Platform.select()` when needed
+
+## Key Features
+
+### Voice Interaction
+- Real-time audio streaming (full duplex)
+- Microphone permissions handled gracefully
+- Voice-first, text as fallback
+- Background audio support
+
+### Personalized Excursions
+- AI-generated nature therapy routes
+- Weather-aware recommendations
+- Location-based suggestions
+- Save favorites functionality
+
+### User Context
+- Health goals and preferences
+- Conversation history for continuity
+- Progress tracking
+- Personalized coaching based on profile
+
+## Platform Considerations
+
+### iOS-First Features
+- Native maps integration
+- Camera for nature moments
+- Location services
+- Microphone for voice
+- Background audio
+
+### Web Preview (Development Only)
+- Graceful fallbacks for native APIs
+- Use `Platform.select()` for web alternatives
+- Web NOT intended for production
+- Expo Go preview only via launch.expo.dev
+
+## Build Configuration
+
+### app.json
+- iOS-only platform configuration
+- Bundle identifier: `com.natureup.health`
+- Permissions: Microphone, Location, Camera
+- Expo Router plugin enabled
+- New Architecture enabled
+
+### eas.json
+- Development builds for internal testing
+- Preview builds for TestFlight
+- Production builds for App Store
+- Auto-increment version numbers
+
+## Deployment Checklist
+
+### Before EAS Build
+- [ ] TypeScript compiles (`npm run build`)
+- [ ] All RLS policies tested
+- [ ] API keys in Supabase secrets (not .env)
+- [ ] Permissions configured in app.json
+- [ ] Icons and splash screen added
+- [ ] Bundle identifier set correctly
+
+### TestFlight Release
+- [ ] EAS build successful
+- [ ] Submit to TestFlight via `eas submit`
+- [ ] Test on physical iPhone
+- [ ] Verify voice features work
+- [ ] Check location and map functionality
+- [ ] Validate AI assistant responses
+
+## Development Best Practices
+
+### Security
+- ALWAYS enable RLS on new tables
+- NEVER commit API keys to GitHub
+- Use Supabase Edge Functions for sensitive operations
+- Validate user input on client AND server
+
+### Performance
+- Lazy load screens with React.lazy()
+- Optimize images for mobile
+- Use memoization for expensive calculations
+- Minimize re-renders with proper React patterns
+
+### User Experience
+- Loading states for all async operations
+- Error boundaries for graceful failure handling
+- Offline support where possible
+- Smooth transitions and animations
+- Clear feedback for all user actions
+
+## Resources
+
+- [Expo Documentation](https://docs.expo.dev)
+- [expo-router Guide](https://docs.expo.dev/router/introduction/)
+- [Supabase Docs](https://supabase.com/docs)
+- [OpenAI Assistants API](https://platform.openai.com/docs/assistants/overview)
+- [launch.expo.dev](https://launch.expo.dev) - Preview tool
+- [EAS Build](https://docs.expo.dev/build/introduction/) - Production builds
+
+## Support & Issues
+
+When debugging:
+1. Check Bolt.new preview first
+2. Test on iPhone via launch.expo.dev
+3. Review Supabase logs for backend issues
+4. Check EAS build logs for deployment issues
+5. All builds are fully symbolicated for crash reporting
