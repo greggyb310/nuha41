@@ -85,7 +85,20 @@ export default function CreateExcursionScreen() {
       router.push(`/excursions/${savedExcursion.id}`);
     } catch (err) {
       console.error('Error creating excursion:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create excursion');
+
+      let displayError = 'Failed to create excursion';
+
+      if (err instanceof Error) {
+        if (err.message.includes('waypoints') || err.message.includes('planner')) {
+          displayError = "Sorry, couldn't generate a route right now. The excursion planner may need configuration. Please try again later.";
+        } else if (err.message.includes('Assistant') || err.message.includes('OpenAI')) {
+          displayError = "Our AI planner is temporarily unavailable. Please try again in a moment.";
+        } else {
+          displayError = err.message;
+        }
+      }
+
+      setError(displayError);
     } finally {
       setIsCreating(false);
     }

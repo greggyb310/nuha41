@@ -108,13 +108,17 @@ async function createExcursion(req: ExcursionRequest) {
     const excursionData = JSON.parse(planExcursionCall.function.arguments);
     console.log("Excursion plan from tool call:", excursionData);
 
+    if (!excursionData.waypoints || !Array.isArray(excursionData.waypoints) || excursionData.waypoints.length === 0) {
+      throw new Error("Excursion planner returned no waypoints. Please check OpenAI Assistant configuration or try again.");
+    }
+
     return {
       title: excursionData.title,
       description: excursionData.summary || excursionData.description,
       route_data: {
         waypoints: excursionData.waypoints,
-        start_location: excursionData.waypoints[0] || req.location,
-        end_location: excursionData.waypoints[excursionData.waypoints.length - 1] || req.location,
+        start_location: excursionData.waypoints[0],
+        end_location: excursionData.waypoints[excursionData.waypoints.length - 1],
         terrain_type: excursionData.terrain_type,
         elevation_gain: 0
       },

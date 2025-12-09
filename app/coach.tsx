@@ -71,9 +71,21 @@ export default function CoachScreen() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
-      setError(errorMessage);
       console.error('Error sending message:', err);
+
+      let errorMessage = 'Failed to send message to health coach';
+
+      if (err instanceof Error) {
+        if (err.message.includes('user') || err.message.includes('userId')) {
+          errorMessage = "Connection issue. Please make sure you're signed in and try again.";
+        } else if (err.message.includes('Assistant') || err.message.includes('OpenAI')) {
+          errorMessage = "Our AI coach is temporarily unavailable. Please try again in a moment.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
