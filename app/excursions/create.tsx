@@ -68,6 +68,7 @@ export default function CreateExcursionScreen() {
         } : undefined,
       };
 
+      console.log("[CreateExcursion] session.access_token prefix:", session?.access_token?.slice(0, 25));
       const excursionResponse = await assistantAPI.createExcursion(request, session.access_token);
 
       const { data: savedExcursion, error: dbError } = await databaseService.createExcursion({

@@ -49,6 +49,7 @@ export default function CoachScreen() {
     setError(null);
 
     try {
+      console.log("[Coach] session.access_token prefix:", session?.access_token?.slice(0, 25));
       const response = await assistantAPI.sendToHealthCoach(
         {
           message: userMessage.content,

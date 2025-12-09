@@ -105,10 +105,24 @@ async function createExcursion(req: ExcursionRequest) {
       throw new Error("No plan_excursion tool call found");
     }
 
-    const excursionData = JSON.parse(planExcursionCall.function.arguments);
-    console.log("Excursion plan from tool call:", excursionData);
+    const excursionDataRaw = planExcursionCall.function.arguments;
+    console.log("Raw excursion plan arguments:", excursionDataRaw);
 
-    if (!excursionData.waypoints || !Array.isArray(excursionData.waypoints) || excursionData.waypoints.length === 0) {
+    let excursionData: any;
+    try {
+      excursionData = JSON.parse(excursionDataRaw);
+    } catch (parseError) {
+      console.error("Failed to parse excursion plan arguments:", parseError);
+      throw new Error("Excursion planner returned invalid data. Please check OpenAI Assistant configuration.");
+    }
+
+    console.log("Excursion plan from tool call (parsed):", excursionData);
+
+    if (
+      !excursionData ||
+      !Array.isArray(excursionData.waypoints) ||
+      excursionData.waypoints.length === 0
+    ) {
       throw new Error("Excursion planner returned no waypoints. Please check OpenAI Assistant configuration or try again.");
     }
 

@@ -24,11 +24,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 function getAuthHeaders(sessionToken?: string) {
-  const token = sessionToken ?? supabaseAnonKey;
+  if (!sessionToken) {
+    console.error("[assistantAPI] No session token provided to getAuthHeaders");
+  }
 
   return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
+    Authorization: `Bearer ${sessionToken}`,
+    "Content-Type": "application/json",
   };
 }
 

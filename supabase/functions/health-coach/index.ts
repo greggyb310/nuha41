@@ -298,7 +298,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const authHeader = req.headers.get("Authorization");
+    console.log("[health-coach] Raw Authorization header:", authHeader);
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("[health-coach] Missing or malformed Authorization header");
       return new Response(
         JSON.stringify({ error: "Missing or invalid Authorization header" }),
         {
@@ -308,12 +311,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const jwt = authHeader.replace("Bearer ", "");
+    const jwt = authHeader.replace("Bearer ", "").trim();
+    console.log("[health-coach] JWT prefix:", jwt.slice(0, 25));
+
     const supabase = getSupabaseClient();
     const { data: authData, error: authError } = await supabase.auth.getUser(jwt);
 
     if (authError || !authData?.user) {
-      console.error("JWT validation error:", authError);
+      console.error("[health-coach] JWT validation error:", authError, "authData:", authData);
       return new Response(
         JSON.stringify({ error: "Invalid or expired session token" }),
         {
@@ -324,7 +329,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const authenticatedUserId = authData.user.id;
-    console.log("Health Coach authenticated user:", authenticatedUserId);
+    console.log("[health-coach] Authenticated user:", authenticatedUserId);
 
     const result = await processMessage(body, authenticatedUserId);
 
