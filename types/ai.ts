@@ -48,7 +48,6 @@ export interface CoachingSteps {
 }
 
 export interface HealthCoachRequest {
-  userId: string;
   message: string;
   threadId?: string;
   context?: {

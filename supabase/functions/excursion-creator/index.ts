@@ -1,9 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { openai, ASSISTANT_IDS } from "../_shared/openai-client.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { getSupabaseClient } from "../_shared/supabaseClient.ts";
 
 interface ExcursionRequest {
-  user_id: string;
   preferences: {
     duration_minutes?: number;
     distance_km?: number;
@@ -164,6 +164,35 @@ Deno.serve(async (req: Request) => {
   if (corsResponse) return corsResponse;
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Missing or invalid Authorization header" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const jwt = authHeader.replace("Bearer ", "").trim();
+    const supabase = getSupabaseClient();
+    const { data: authData, error: authError } = await supabase.auth.getUser(jwt);
+
+    if (authError || !authData?.user) {
+      console.error("JWT validation error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired session token" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const userId = authData.user.id;
+    console.log("Excursion Creator authenticated user:", userId);
+
     const body: ExcursionRequest = await req.json();
 
     if (!body.location || typeof body.location.latitude !== "number" || typeof body.location.longitude !== "number") {

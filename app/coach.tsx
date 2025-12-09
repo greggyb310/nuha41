@@ -51,7 +51,6 @@ export default function CoachScreen() {
     try {
       const response = await assistantAPI.sendToHealthCoach(
         {
-          userId: user.id,
           message: userMessage.content,
           threadId,
           context: profile

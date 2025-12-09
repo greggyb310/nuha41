@@ -47,7 +47,6 @@ export interface SendMessageRequest {
 }
 
 export interface ExcursionRequest {
-  user_id: string;
   preferences: ExcursionPreferences;
   location: LocationInput;
   health_profile?: UserHealthProfile;

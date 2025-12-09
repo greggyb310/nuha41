@@ -4,7 +4,6 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { getSupabaseClient } from "../_shared/supabaseClient.ts";
 
 interface HealthCoachRequest {
-  userId: string;
   message: string;
   threadId?: string;
   context?: {
@@ -217,8 +216,8 @@ function parseToolCalls(run: any): {
   return { excursions, coachingSteps, textResponse: textResponse.trim() };
 }
 
-async function processMessage(req: HealthCoachRequest) {
-  const profile = req.context?.profile || (await loadUserProfile(req.userId));
+async function processMessage(req: HealthCoachRequest, userId: string) {
+  const profile = req.context?.profile || (await loadUserProfile(userId));
 
   const contextMessage = buildContextMessage({
     ...req,
@@ -266,7 +265,7 @@ async function processMessage(req: HealthCoachRequest) {
   const messages = await openai.beta.threads.messages.list(threadId);
   const messageCount = messages.data.length;
 
-  await saveConversation(req.userId, threadId, messageCount);
+  await saveConversation(userId, threadId, messageCount);
 
   return {
     threadId,
@@ -325,19 +324,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const authenticatedUserId = authData.user.id;
+    console.log("Health Coach authenticated user:", authenticatedUserId);
 
-    if (body.userId && body.userId !== authenticatedUserId) {
-      console.warn(
-        `User ID mismatch: body=${body.userId}, authenticated=${authenticatedUserId}`
-      );
-    }
-
-    const validatedRequest: HealthCoachRequest = {
-      ...body,
-      userId: authenticatedUserId,
-    };
-
-    const result = await processMessage(validatedRequest);
+    const result = await processMessage(body, authenticatedUserId);
 
     return new Response(JSON.stringify(result), {
       status: 200,

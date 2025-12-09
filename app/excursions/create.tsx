@@ -56,7 +56,6 @@ export default function CreateExcursionScreen() {
 
     try {
       const request: ExcursionRequest = {
-        user_id: user.id,
         preferences,
         location: {
           latitude: coordinates.latitude,
