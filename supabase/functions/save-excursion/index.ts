@@ -41,9 +41,9 @@ Deno.serve(async (req: Request) => {
   try {
     const body: SaveExcursionRequest = await req.json();
 
-    if (!body.userId || !body.excursionData) {
+    if (!body.excursionData) {
       return new Response(
-        JSON.stringify({ error: "userId and excursionData are required" }),
+        JSON.stringify({ error: "excursionData is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -51,7 +51,41 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { userId, excursionData } = body;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Missing or invalid Authorization header" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const jwt = authHeader.replace("Bearer ", "");
+    const supabase = getSupabaseClient();
+    const { data: authData, error: authError } = await supabase.auth.getUser(jwt);
+
+    if (authError || !authData?.user) {
+      console.error("JWT validation error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired session token" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const userId = authData.user.id;
+
+    if (body.userId && body.userId !== userId) {
+      console.warn(
+        `User ID mismatch: body=${body.userId}, authenticated=${userId}`
+      );
+    }
+
+    const { excursionData } = body;
 
     if (
       !excursionData.title ||
@@ -72,8 +106,6 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
-
-    const supabase = getSupabaseClient();
 
     const { data, error } = await supabase
       .from("excursions")
