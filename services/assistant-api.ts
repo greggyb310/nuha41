@@ -23,16 +23,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase credentials');
 }
 
-const headers = {
-  'Authorization': `Bearer ${supabaseAnonKey}`,
-  'Content-Type': 'application/json',
-};
+function getAuthHeaders(sessionToken?: string) {
+  const token = sessionToken ?? supabaseAnonKey;
+
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+}
 
 export const assistantAPI = {
-  async createThread(request: CreateThreadRequest): Promise<CreateThreadResponse> {
+  async createThread(request: CreateThreadRequest, sessionToken?: string): Promise<CreateThreadResponse> {
     const response = await fetch(`${supabaseUrl}/functions/v1/health-coach`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(sessionToken),
       body: JSON.stringify({
         action: 'create_thread',
         ...request,
@@ -40,18 +44,32 @@ export const assistantAPI = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create thread: ${errorText}`);
+      let errorBody: any = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { error: await response.text() };
+      }
+
+      console.error('Create thread error:', response.status, errorBody);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTH');
+      } else if (response.status >= 500) {
+        throw new Error('SERVER');
+      } else {
+        throw new Error(errorBody?.error || `HTTP ${response.status}`);
+      }
     }
 
     const data = await response.json();
     return data as CreateThreadResponse;
   },
 
-  async sendMessage(request: SendMessageRequest): Promise<AssistantResponse> {
+  async sendMessage(request: SendMessageRequest, sessionToken?: string): Promise<AssistantResponse> {
     const response = await fetch(`${supabaseUrl}/functions/v1/health-coach`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(sessionToken),
       body: JSON.stringify({
         action: 'send_message',
         ...request,
@@ -59,18 +77,32 @@ export const assistantAPI = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to send message: ${errorText}`);
+      let errorBody: any = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { error: await response.text() };
+      }
+
+      console.error('Send message error:', response.status, errorBody);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTH');
+      } else if (response.status >= 500) {
+        throw new Error('SERVER');
+      } else {
+        throw new Error(errorBody?.error || `HTTP ${response.status}`);
+      }
     }
 
     const data = await response.json();
     return data as AssistantResponse;
   },
 
-  async getThreadMessages(threadId: string): Promise<any[]> {
+  async getThreadMessages(threadId: string, sessionToken?: string): Promise<any[]> {
     const response = await fetch(`${supabaseUrl}/functions/v1/health-coach`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(sessionToken),
       body: JSON.stringify({
         action: 'get_messages',
         thread_id: threadId,
@@ -78,72 +110,142 @@ export const assistantAPI = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get messages: ${errorText}`);
+      let errorBody: any = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { error: await response.text() };
+      }
+
+      console.error('Get messages error:', response.status, errorBody);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTH');
+      } else if (response.status >= 500) {
+        throw new Error('SERVER');
+      } else {
+        throw new Error(errorBody?.error || `HTTP ${response.status}`);
+      }
     }
 
     const data = await response.json();
     return data as any[];
   },
 
-  async createExcursion(request: ExcursionRequest): Promise<ExcursionResponse> {
+  async createExcursion(request: ExcursionRequest, sessionToken?: string): Promise<ExcursionResponse> {
     const response = await fetch(`${supabaseUrl}/functions/v1/excursion-creator`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(sessionToken),
       body: JSON.stringify(request),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create excursion: ${errorText}`);
+      let errorBody: any = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { error: await response.text() };
+      }
+
+      console.error('Create excursion error:', response.status, errorBody);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTH');
+      } else if (response.status >= 500) {
+        throw new Error('SERVER');
+      } else {
+        throw new Error(errorBody?.error || `HTTP ${response.status}`);
+      }
     }
 
     const data = await response.json();
     return data as ExcursionResponse;
   },
 
-  async getWeather(location: LocationInput): Promise<WeatherData> {
+  async getWeather(location: LocationInput, sessionToken?: string): Promise<WeatherData> {
     const response = await fetch(`${supabaseUrl}/functions/v1/weather`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(sessionToken),
       body: JSON.stringify(location),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get weather: ${errorText}`);
+      let errorBody: any = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { error: await response.text() };
+      }
+
+      console.error('Get weather error:', response.status, errorBody);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTH');
+      } else if (response.status >= 500) {
+        throw new Error('SERVER');
+      } else {
+        throw new Error(errorBody?.error || `HTTP ${response.status}`);
+      }
     }
 
     const data = await response.json();
     return data as WeatherData;
   },
 
-  async sendToHealthCoach(request: HealthCoachRequest): Promise<HealthCoachResponse> {
+  async sendToHealthCoach(request: HealthCoachRequest, sessionToken?: string): Promise<HealthCoachResponse> {
     const response = await fetch(`${supabaseUrl}/functions/v1/health-coach`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(sessionToken),
       body: JSON.stringify(request),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to send message to health coach: ${errorText}`);
+      let errorBody: any = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { error: await response.text() };
+      }
+
+      console.error('Health coach error:', response.status, errorBody);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTH');
+      } else if (response.status >= 500) {
+        throw new Error('SERVER');
+      } else {
+        throw new Error(errorBody?.error || `HTTP ${response.status}`);
+      }
     }
 
     const data = await response.json();
     return data as HealthCoachResponse;
   },
 
-  async saveExcursion(request: SaveExcursionRequest): Promise<SaveExcursionResponse> {
+  async saveExcursion(request: SaveExcursionRequest, sessionToken?: string): Promise<SaveExcursionResponse> {
     const response = await fetch(`${supabaseUrl}/functions/v1/save-excursion`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(sessionToken),
       body: JSON.stringify(request),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to save excursion: ${errorText}`);
+      let errorBody: any = null;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = { error: await response.text() };
+      }
+
+      console.error('Save excursion error:', response.status, errorBody);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTH');
+      } else if (response.status >= 500) {
+        throw new Error('SERVER');
+      } else {
+        throw new Error(errorBody?.error || `HTTP ${response.status}`);
+      }
     }
 
     const data = await response.json();

@@ -12,7 +12,7 @@ import type { ExcursionRequest, ExcursionPreferences } from '../../types/assista
 
 export default function CreateExcursionScreen() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const { coordinates, loading: locationLoading, error: locationError, getCurrentLocation } = useLocation();
   const { weather } = useWeather(coordinates?.latitude, coordinates?.longitude);
 
@@ -42,8 +42,12 @@ export default function CreateExcursionScreen() {
   const durationOptions = [15, 30, 45, 60, 90];
 
   const handleCreateExcursion = async () => {
-    if (!user || !coordinates) {
-      setError('Missing user or location data');
+    if (!user || !session?.access_token || !coordinates) {
+      if (!user || !session?.access_token) {
+        setError("You need to be signed in to create an excursion.");
+      } else {
+        setError('Missing location data');
+      }
       return;
     }
 
@@ -65,7 +69,7 @@ export default function CreateExcursionScreen() {
         } : undefined,
       };
 
-      const excursionResponse = await assistantAPI.createExcursion(request);
+      const excursionResponse = await assistantAPI.createExcursion(request, session.access_token);
 
       const { data: savedExcursion, error: dbError } = await databaseService.createExcursion({
         user_id: user.id,
@@ -89,12 +93,16 @@ export default function CreateExcursionScreen() {
       let displayError = 'Failed to create excursion';
 
       if (err instanceof Error) {
-        if (err.message.includes('waypoints') || err.message.includes('planner')) {
+        if (err.message === 'AUTH') {
+          displayError = "Session expired. Please sign in again.";
+        } else if (err.message === 'SERVER') {
+          displayError = "Our server hit a problem. Please try again in a bit.";
+        } else if (err.message.includes('waypoints') || err.message.includes('planner')) {
           displayError = "Sorry, couldn't generate a route right now. The excursion planner may need configuration. Please try again later.";
         } else if (err.message.includes('Assistant') || err.message.includes('OpenAI')) {
           displayError = "Our AI planner is temporarily unavailable. Please try again in a moment.";
         } else {
-          displayError = err.message;
+          displayError = "Sorry, I couldn't create an excursion right now. Please try again.";
         }
       }
 

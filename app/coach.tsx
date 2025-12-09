@@ -22,7 +22,7 @@ interface ChatMessage {
 
 export default function CoachScreen() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [threadId, setThreadId] = useState<string | undefined>(undefined);
@@ -30,7 +30,12 @@ export default function CoachScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSendMessage = async () => {
-    if (!inputText.trim() || !user) return;
+    if (!inputText.trim() || !user || !session?.access_token) {
+      if (!user || !session?.access_token) {
+        setError("You need to be signed in to talk to your coach.");
+      }
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: `user_${Date.now()}`,
@@ -44,20 +49,23 @@ export default function CoachScreen() {
     setError(null);
 
     try {
-      const response = await assistantAPI.sendToHealthCoach({
-        userId: user.id,
-        message: userMessage.content,
-        threadId,
-        context: profile
-          ? {
-              profile: {
-                full_name: profile.full_name,
-                health_goals: profile.health_goals || [],
-                preferences: profile.preferences || {},
-              },
-            }
-          : undefined,
-      });
+      const response = await assistantAPI.sendToHealthCoach(
+        {
+          userId: user.id,
+          message: userMessage.content,
+          threadId,
+          context: profile
+            ? {
+                profile: {
+                  full_name: profile.full_name,
+                  health_goals: profile.health_goals || [],
+                  preferences: profile.preferences || {},
+                },
+              }
+            : undefined,
+        },
+        session.access_token
+      );
 
       if (!threadId) {
         setThreadId(response.threadId);
@@ -76,12 +84,14 @@ export default function CoachScreen() {
       let errorMessage = 'Failed to send message to health coach';
 
       if (err instanceof Error) {
-        if (err.message.includes('user') || err.message.includes('userId')) {
-          errorMessage = "Connection issue. Please make sure you're signed in and try again.";
+        if (err.message === 'AUTH') {
+          errorMessage = "Session expired. Please sign in again.";
+        } else if (err.message === 'SERVER') {
+          errorMessage = "Our server hit a problem. Please try again in a bit.";
         } else if (err.message.includes('Assistant') || err.message.includes('OpenAI')) {
           errorMessage = "Our AI coach is temporarily unavailable. Please try again in a moment.";
         } else {
-          errorMessage = err.message;
+          errorMessage = "Connection issue. Please make sure you're signed in and try again.";
         }
       }
 
