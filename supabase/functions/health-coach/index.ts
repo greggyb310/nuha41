@@ -288,9 +288,9 @@ Deno.serve(async (req: Request) => {
   try {
     const body: HealthCoachRequest = await req.json();
 
-    if (!body.userId || !body.message) {
+    if (!body.message) {
       return new Response(
-        JSON.stringify({ error: "userId and message are required" }),
+        JSON.stringify({ error: "message is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -298,7 +298,46 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const result = await processMessage(body);
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Missing or invalid Authorization header" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const jwt = authHeader.replace("Bearer ", "");
+    const supabase = getSupabaseClient();
+    const { data: authData, error: authError } = await supabase.auth.getUser(jwt);
+
+    if (authError || !authData?.user) {
+      console.error("JWT validation error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired session token" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const authenticatedUserId = authData.user.id;
+
+    if (body.userId && body.userId !== authenticatedUserId) {
+      console.warn(
+        `User ID mismatch: body=${body.userId}, authenticated=${authenticatedUserId}`
+      );
+    }
+
+    const validatedRequest: HealthCoachRequest = {
+      ...body,
+      userId: authenticatedUserId,
+    };
+
+    const result = await processMessage(validatedRequest);
 
     return new Response(JSON.stringify(result), {
       status: 200,

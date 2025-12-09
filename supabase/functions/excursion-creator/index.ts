@@ -112,13 +112,39 @@ async function createExcursion(req: ExcursionRequest) {
       throw new Error("Excursion planner returned no waypoints. Please check OpenAI Assistant configuration or try again.");
     }
 
+    const firstWaypoint = excursionData.waypoints[0];
+    const lastWaypoint = excursionData.waypoints[excursionData.waypoints.length - 1];
+
+    if (!firstWaypoint || !lastWaypoint) {
+      throw new Error("Invalid waypoint data: missing first or last waypoint.");
+    }
+
+    if (
+      typeof firstWaypoint.latitude !== "number" ||
+      typeof firstWaypoint.longitude !== "number" ||
+      typeof lastWaypoint.latitude !== "number" ||
+      typeof lastWaypoint.longitude !== "number"
+    ) {
+      throw new Error("Invalid waypoint data: latitude and longitude must be numbers.");
+    }
+
     return {
       title: excursionData.title,
       description: excursionData.summary || excursionData.description,
       route_data: {
         waypoints: excursionData.waypoints,
-        start_location: excursionData.waypoints[0],
-        end_location: excursionData.waypoints[excursionData.waypoints.length - 1],
+        start_location: {
+          latitude: firstWaypoint.latitude,
+          longitude: firstWaypoint.longitude,
+          name: firstWaypoint.name,
+          description: firstWaypoint.description,
+        },
+        end_location: {
+          latitude: lastWaypoint.latitude,
+          longitude: lastWaypoint.longitude,
+          name: lastWaypoint.name,
+          description: lastWaypoint.description,
+        },
         terrain_type: excursionData.terrain_type,
         elevation_gain: 0
       },
