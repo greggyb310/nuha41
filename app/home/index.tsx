@@ -9,7 +9,7 @@ import { colors, typography, spacing } from '../../constants/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user, profile, signOut } = useAuth();
+  const { isAuthenticated, isLoading, user, profile, signOut, refreshSession } = useAuth();
   const { coordinates, loading: locationLoading, error: locationError, getCurrentLocation } = useLocation();
   const { weather, loading: weatherLoading, error: weatherError, refresh: refreshWeather } = useWeather(
     coordinates?.latitude,
@@ -44,6 +44,15 @@ export default function HomeScreen() {
   const handleSignOut = async () => {
     await signOut();
     router.replace('/auth/login');
+  };
+
+  const handleRefreshSession = async () => {
+    const { error } = await refreshSession();
+    if (error) {
+      console.error('[HomeScreen] Failed to refresh session:', error);
+    } else {
+      console.log('[HomeScreen] Session refreshed successfully');
+    }
   };
 
   return (
@@ -126,6 +135,13 @@ export default function HomeScreen() {
         />
 
         <Button
+          title="Refresh Session"
+          onPress={handleRefreshSession}
+          variant="secondary"
+          style={styles.refreshButton}
+        />
+
+        <Button
           title="Sign Out"
           onPress={handleSignOut}
           variant="outline"
@@ -199,6 +215,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   editButton: {
+    width: '100%',
+  },
+  refreshButton: {
     width: '100%',
   },
   signOutButton: {

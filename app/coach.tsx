@@ -22,12 +22,13 @@ interface ChatMessage {
 
 export default function CoachScreen() {
   const router = useRouter();
-  const { user, profile, session } = useAuth();
+  const { user, profile, session, refreshSession } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [threadId, setThreadId] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionRefreshAttempted, setSessionRefreshAttempted] = useState(false);
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !user || !session?.access_token) {
@@ -92,7 +93,23 @@ export default function CoachScreen() {
 
       if (err instanceof Error) {
         if (err.message === 'AUTH') {
-          errorMessage = "Session expired. Please sign in again.";
+          if (!sessionRefreshAttempted) {
+            console.log('[Coach] Auth error detected, attempting session refresh...');
+            setSessionRefreshAttempted(true);
+            const { error: refreshError } = await refreshSession();
+
+            if (!refreshError) {
+              console.log('[Coach] Session refreshed, retrying message...');
+              setIsLoading(false);
+              handleSendMessage();
+              return;
+            } else {
+              console.error('[Coach] Session refresh failed:', refreshError);
+              errorMessage = "Session expired. Please sign out and sign back in.";
+            }
+          } else {
+            errorMessage = "Session expired. Please sign out and sign back in.";
+          }
         } else if (err.message === 'SERVER') {
           errorMessage = "Our server hit a problem. Please try again in a bit.";
         } else if (err.message.includes('Assistant') || err.message.includes('OpenAI')) {
@@ -110,6 +127,7 @@ export default function CoachScreen() {
 
   const handleRetry = () => {
     setError(null);
+    setSessionRefreshAttempted(false);
   };
 
   return (
@@ -126,6 +144,22 @@ export default function CoachScreen() {
           style={styles.backButton}
         />
         <Text style={styles.headerTitle}>Health Coach</Text>
+        <Button
+          title="Refresh"
+          onPress={async () => {
+            console.log('[Coach] Manual session refresh triggered');
+            const { error } = await refreshSession();
+            if (error) {
+              console.error('[Coach] Manual refresh failed:', error);
+            } else {
+              console.log('[Coach] Manual refresh successful');
+              setSessionRefreshAttempted(false);
+            }
+          }}
+          variant="ghost"
+          size="small"
+          style={styles.refreshButton}
+        />
       </View>
 
       <ScrollView
@@ -224,6 +258,11 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
     color: colors.textPrimary,
     marginLeft: spacing.md,
+  },
+  refreshButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    minWidth: 70,
   },
   messagesContainer: {
     flex: 1,

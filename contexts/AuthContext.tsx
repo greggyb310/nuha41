@@ -16,6 +16,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
+  refreshSession: () => Promise<{ error: Error | null }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -141,6 +142,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshSession = async () => {
+    try {
+      console.log('[AuthContext] Manually refreshing session...');
+      const { data, error } = await supabase.auth.refreshSession();
+
+      if (error) {
+        console.error('[AuthContext] Failed to refresh session:', error);
+        return { error };
+      }
+
+      console.log('[AuthContext] Session refreshed successfully');
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+
+      if (data.session?.user?.id) {
+        await loadProfile(data.session.user.id);
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('[AuthContext] Exception during refresh:', error);
+      return { error: error as Error };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -153,6 +179,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     resetPassword,
     updateProfile,
     refreshProfile,
+    refreshSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
