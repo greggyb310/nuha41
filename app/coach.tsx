@@ -49,7 +49,10 @@ export default function CoachScreen() {
     setError(null);
 
     try {
+      console.log("[Coach] User ID:", user.id);
       console.log("[Coach] session.access_token prefix:", session?.access_token?.slice(0, 25));
+      console.log("[Coach] Sending message to Health Coach...");
+
       const response = await assistantAPI.sendToHealthCoach(
         {
           message: userMessage.content,
@@ -71,6 +74,9 @@ export default function CoachScreen() {
         setThreadId(response.threadId);
       }
 
+      console.log("[Coach] Response received successfully");
+      console.log("[Coach] Thread ID:", response.threadId);
+
       const assistantMessage: ChatMessage = {
         id: response.message.id,
         role: 'assistant',
@@ -79,7 +85,8 @@ export default function CoachScreen() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
-      console.error('Error sending message:', err);
+      console.error('[Coach] Full error object:', err);
+      console.error('[Coach] Error message:', err instanceof Error ? err.message : String(err));
 
       let errorMessage = 'Failed to send message to health coach';
 

@@ -195,11 +195,18 @@ export const assistantAPI = {
   },
 
   async sendToHealthCoach(request: HealthCoachRequest, sessionToken?: string): Promise<HealthCoachResponse> {
-    const response = await fetch(`${supabaseUrl}/functions/v1/health-coach`, {
+    const url = `${supabaseUrl}/functions/v1/health-coach`;
+    console.log('[assistantAPI] Calling Health Coach at:', url);
+    console.log('[assistantAPI] Has session token:', !!sessionToken);
+    console.log('[assistantAPI] Token prefix:', sessionToken?.slice(0, 20));
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: getAuthHeaders(sessionToken),
       body: JSON.stringify(request),
     });
+
+    console.log('[assistantAPI] Health Coach response status:', response.status);
 
     if (!response.ok) {
       let errorBody: any = null;
@@ -209,7 +216,7 @@ export const assistantAPI = {
         errorBody = { error: await response.text() };
       }
 
-      console.error('Health coach error:', response.status, errorBody);
+      console.error('[assistantAPI] Health coach error:', response.status, errorBody);
 
       if (response.status === 401 || response.status === 403) {
         throw new Error('AUTH');
@@ -221,6 +228,7 @@ export const assistantAPI = {
     }
 
     const data = await response.json();
+    console.log('[assistantAPI] Health Coach response parsed successfully');
     return data as HealthCoachResponse;
   },
 
