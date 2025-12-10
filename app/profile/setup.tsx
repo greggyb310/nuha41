@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, AppState, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../services/supabase';
 import { Button, Input, Card, Badge, LoadingSpinner } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../constants/theme';
 import { User, CheckCircle, Circle } from 'lucide-react-native';
@@ -36,7 +37,7 @@ const DIFFICULTY_LEVELS = [
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
-  const { user, profile, updateProfile, isLoading: authLoading } = useAuth();
+  const { user, profile, updateProfile, refreshProfile, isLoading: authLoading } = useAuth();
 
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.health_goals || []);
@@ -129,6 +130,44 @@ export default function ProfileSetupScreen() {
         return;
       }
 
+      await refreshProfile();
+      router.replace('/home');
+    } catch (err) {
+      setError('An unexpected error occurred');
+      setIsLoading(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const { error: upsertError } = await supabase
+        .from('user_profiles')
+        .upsert(
+          {
+            user_id: user.id,
+            full_name: fullName || null,
+            health_goals: selectedGoals.length > 0 ? selectedGoals : [],
+            preferences: {
+              activities: selectedActivities,
+              difficulty: selectedDifficulty,
+            },
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (upsertError) {
+        console.error('Skip profile error:', upsertError);
+        setError('Could not skip right now. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      await refreshProfile();
       router.replace('/home');
     } catch (err) {
       setError('An unexpected error occurred');
@@ -301,9 +340,10 @@ export default function ProfileSetupScreen() {
 
           <Button
             title="Skip for Now"
-            onPress={() => router.replace('/home')}
+            onPress={handleSkip}
             variant="ghost"
             size="medium"
+            disabled={isLoading}
             style={styles.skipButton}
           />
         </View>

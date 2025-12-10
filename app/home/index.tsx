@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { useWeather } from '../../hooks/useWeather';
@@ -9,7 +9,8 @@ import { colors, typography, spacing } from '../../constants/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user, profile, signOut, refreshSession } = useAuth();
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading, user, profile, hasCompletedProfile, signOut, refreshSession } = useAuth();
   const { coordinates, loading: locationLoading, error: locationError, getCurrentLocation } = useLocation();
   const { weather, loading: weatherLoading, error: weatherError, refresh: refreshWeather } = useWeather(
     coordinates?.latitude,
@@ -19,12 +20,10 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/auth/login');
-    } else if (!isLoading && isAuthenticated && profile) {
-      if (!profile.full_name || !profile.health_goals || profile.health_goals.length === 0) {
-        router.replace('/profile/setup');
-      }
+    } else if (!isLoading && isAuthenticated && !hasCompletedProfile && pathname !== '/profile/setup') {
+      router.replace('/profile/setup');
     }
-  }, [isLoading, isAuthenticated, profile]);
+  }, [isLoading, isAuthenticated, hasCompletedProfile, pathname]);
 
   useEffect(() => {
     if (isAuthenticated && !coordinates && !locationLoading) {

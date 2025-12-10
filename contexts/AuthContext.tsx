@@ -10,6 +10,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  hasCompletedProfile: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
@@ -167,12 +168,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const hasCompletedProfile = !!(
+    profile &&
+    profile.full_name &&
+    profile.health_goals &&
+    profile.health_goals.length > 0
+  );
+
   const value: AuthContextType = {
     user,
     session,
     profile,
     isLoading,
     isAuthenticated: !!user,
+    hasCompletedProfile,
     signUp,
     signIn,
     signOut,
