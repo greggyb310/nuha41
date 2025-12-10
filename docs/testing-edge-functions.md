@@ -21,7 +21,7 @@ Go to Supabase Dashboard → Project Settings → Edge Functions → Secrets
 Already configured in the project:
 
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://shdakxvwvnmhkofdjlxs.supabase.co
+EXPO_PUBLIC_SUPABASE_URL=https://osfpvrbnudanwzffavem.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
@@ -206,7 +206,7 @@ Authorization: Bearer {{SUPABASE_ANON_KEY}}
 
 ### Health Coach
 ```bash
-curl -X POST https://shdakxvwvnmhkofdjlxs.supabase.co/functions/v1/health-coach \
+curl -X POST https://osfpvrbnudanwzffavem.supabase.co/functions/v1/health-coach \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ANON_KEY" \
   -d '{
@@ -217,7 +217,7 @@ curl -X POST https://shdakxvwvnmhkofdjlxs.supabase.co/functions/v1/health-coach 
 
 ### Save Excursion
 ```bash
-curl -X POST https://shdakxvwvnmhkofdjlxs.supabase.co/functions/v1/save-excursion \
+curl -X POST https://osfpvrbnudanwzffavem.supabase.co/functions/v1/save-excursion \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ANON_KEY" \
   -d '{
