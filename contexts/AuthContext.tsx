@@ -168,12 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const hasCompletedProfile = !!(
-    profile &&
-    profile.full_name &&
-    profile.health_goals &&
-    profile.health_goals.length > 0
-  );
+  const hasCompletedProfile = !!profile;
 
   const value: AuthContextType = {
     user,
