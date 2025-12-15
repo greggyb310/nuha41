@@ -22,17 +22,15 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/auth/login');
-    } else if (!isLoading && isAuthenticated && !hasCompletedProfile && pathname !== '/profile/setup') {
-      router.replace('/profile/setup');
     }
-  }, [isLoading, isAuthenticated, hasCompletedProfile, pathname]);
+  }, [isLoading, isAuthenticated, pathname]);
 
   useEffect(() => {
-    if (isAuthenticated && !coordinates && !locationLoading) {
+    if (isAuthenticated) {
       console.log('[HomeScreen] Fetching location on mount');
       getCurrentLocation();
     }
-  }, [isAuthenticated, coordinates, locationLoading]);
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return <LoadingSpinner fullScreen message="Loading..." />;
@@ -62,7 +60,11 @@ export default function HomeScreen() {
           </Text>
           <TouchableOpacity
             style={styles.settingsButton}
-            onPress={() => setShowSettings(true)}
+            onPress={() => {
+              console.log('Settings button pressed');
+              setShowSettings(true);
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Settings size={28} color={colors.primary} />
           </TouchableOpacity>
@@ -77,7 +79,14 @@ export default function HomeScreen() {
         <Text style={styles.title}>NatureUP Health</Text>
         <Text style={styles.subtitle}>Your personalized nature therapy companion</Text>
 
-        {coordinates && (
+        {locationLoading && (
+          <View style={styles.locationCard}>
+            <LoadingSpinner size="small" />
+            <Text style={styles.locationText}>Getting your location...</Text>
+          </View>
+        )}
+
+        {!locationLoading && coordinates && (
           <View style={styles.mapContainer}>
             <Map
               latitude={coordinates.latitude}
@@ -87,14 +96,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {locationLoading && !coordinates && (
-          <View style={styles.locationCard}>
-            <LoadingSpinner size="small" />
-            <Text style={styles.locationText}>Getting your location...</Text>
-          </View>
-        )}
-
-        {locationError && !coordinates && (
+        {!locationLoading && !coordinates && locationError && (
           <View style={styles.locationCard}>
             <Text style={styles.errorText}>{locationError}</Text>
             <Button
@@ -146,7 +148,8 @@ export default function HomeScreen() {
           activeOpacity={1}
           onPress={() => setShowSettings(false)}
         >
-          <View style={styles.modalContent}>
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Settings</Text>
               <TouchableOpacity
@@ -167,6 +170,7 @@ export default function HomeScreen() {
               <Text style={[styles.menuItemText, styles.signOutText]}>Sign Out</Text>
             </TouchableOpacity>
           </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
     </View>

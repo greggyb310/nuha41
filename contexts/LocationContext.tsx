@@ -64,7 +64,6 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
 
       if (Platform.OS === 'web') {
         console.log('[LocationProvider] Web platform - using browser geolocation');
-        setError('Location services are only available on iOS. Using default coordinates for web preview.');
         setCoordinates({
           latitude: 37.7749,
           longitude: -122.4194,
@@ -74,6 +73,8 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
           heading: null,
           speed: null,
         });
+        setError(null);
+        setLoading(false);
         return;
       }
 
