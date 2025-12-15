@@ -8,17 +8,26 @@
       "distribution": "internal",
       "ios": {
         "buildConfiguration": "Debug"
+      },
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "buildConfiguration": "Release"
+      },
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     },
     "production": {
       "ios": {
         "buildConfiguration": "Release"
+      },
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     }
   },

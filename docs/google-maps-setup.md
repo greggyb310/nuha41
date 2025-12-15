@@ -59,35 +59,80 @@ For production:
 
 ## Step 5: Configure the App
 
-### Update Environment Variables
+### Important: Use EAS Secrets for Production
 
-Edit `.env` file in the project root:
+**NEVER hardcode API keys in `.env` or `app.json`** - they will be exposed in version control and client bundles.
+
+### For Local Development (Optional)
+
+Edit `.env` file for local testing only:
 
 ```bash
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=YOUR_ACTUAL_API_KEY_HERE
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=YOUR_DEVELOPMENT_API_KEY_HERE
 ```
 
-Replace `YOUR_ACTUAL_API_KEY_HERE` with your Google Maps API key from Step 3.
+**Note**: The `.env` file is gitignored and only used for local development in Expo Go.
 
-### Update app.json
+### For EAS Builds (Production)
 
-The `app.json` file is already configured with placeholder keys. The actual API key will be loaded from your environment variables during build.
+Use EAS Secrets to securely store your API key:
 
-If you need to manually update `app.json`:
+```bash
+eas secret:create --scope project --name GOOGLE_MAPS_API_KEY --value YOUR_API_KEY_HERE --type string
+```
 
+Verify the secret was created:
+
+```bash
+eas secret:list
+```
+
+### How It Works
+
+- `app.json` uses the placeholder `$GOOGLE_MAPS_API_KEY`
+- During EAS builds, this is replaced with the actual key from EAS Secrets
+- The key is NEVER stored in version control
+- Each build profile (development, preview, production) uses the same secret
+
+### Configuration Files (Already Set Up)
+
+The following files are pre-configured:
+
+**app.json**:
 ```json
 {
-  "expo": {
-    "ios": {
-      "config": {
-        "googleMapsApiKey": "YOUR_ACTUAL_API_KEY_HERE"
+  "ios": {
+    "config": {
+      "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
+    }
+  },
+  "android": {
+    "config": {
+      "googleMaps": {
+        "apiKey": "$GOOGLE_MAPS_API_KEY"
+      }
+    }
+  }
+}
+```
+
+**eas.json**:
+```json
+{
+  "build": {
+    "development": {
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     },
-    "android": {
-      "config": {
-        "googleMaps": {
-          "apiKey": "YOUR_ACTUAL_API_KEY_HERE"
-        }
+    "preview": {
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
+      }
+    },
+    "production": {
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     }
   }
@@ -96,18 +141,26 @@ If you need to manually update `app.json`:
 
 ## Step 6: Rebuild the App
 
-After adding your API key, rebuild the app:
+After configuring EAS Secrets, rebuild the app:
 
-### For Development Build (Expo Go)
+### For Local Development (Expo Go)
 
 ```bash
 npm start
 ```
 
-**Note**: Expo Go has limitations with native modules like Google Maps. For full functionality, create a development build:
+**Note**: Expo Go has limitations with native modules like Google Maps. For full functionality, create a development build.
+
+### For EAS Development Build
 
 ```bash
 eas build --profile development --platform ios
+```
+
+### For Preview Build (TestFlight)
+
+```bash
+eas build --profile preview --platform ios
 ```
 
 ### For Production Build
@@ -115,6 +168,8 @@ eas build --profile development --platform ios
 ```bash
 eas build --profile production --platform ios
 ```
+
+**Important**: EAS Secrets are automatically injected during build time. You don't need to pass any additional flags.
 
 ## Step 7: Verify Installation
 
@@ -170,23 +225,36 @@ For a small app with moderate usage, the free tier should be sufficient. Set up 
 
 ## Security Best Practices
 
-1. **Never commit API keys to version control**
-   - API keys are in `.env` which is in `.gitignore`
-   - Use environment variables for all builds
+1. **Use EAS Secrets for all builds**
+   - NEVER hardcode API keys in `.env` or `app.json`
+   - Use `eas secret:create` to store sensitive keys
+   - Keys are encrypted and only accessible during build time
 
-2. **Use API key restrictions**
-   - Restrict by iOS bundle identifier in production
-   - Restrict to specific APIs you use
+2. **Secure your repository**
+   - `.env` file is gitignored
+   - `app.json` uses `$GOOGLE_MAPS_API_KEY` placeholder
+   - No API keys committed to version control
+
+3. **Use API key restrictions**
+   - Restrict by iOS bundle identifier: `com.natureup.health4`
+   - Restrict to specific APIs (Maps SDK, Places API only)
    - Regularly rotate API keys
 
-3. **Monitor API usage**
-   - Set up billing alerts
+4. **Monitor API usage**
+   - Set up billing alerts in Google Cloud Console
    - Review API usage regularly
-   - Implement rate limiting if needed
+   - Set daily/monthly quota limits to prevent abuse
 
-4. **Use different keys for environments**
-   - Development key (less restricted)
-   - Production key (fully restricted)
+5. **Rotate keys if compromised**
+   - Create a new API key in Google Cloud Console
+   - Update EAS Secret: `eas secret:create --scope project --name GOOGLE_MAPS_API_KEY --value NEW_KEY --type string --force`
+   - Update Bolt Database secret `GOOGLE_MAPS_API_KEY` for edge functions
+   - Delete the old compromised key
+
+6. **Edge function security**
+   - `places-lookup` edge function uses Bolt Database secrets
+   - Never expose API keys to client code
+   - Always proxy Google Maps API calls through edge functions
 
 ## Additional Resources
 

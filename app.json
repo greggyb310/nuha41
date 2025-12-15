@@ -15,14 +15,14 @@
         "NSCameraUsageDescription": "NatureUP Health needs camera access to capture nature moments during excursions."
       },
       "config": {
-        "googleMapsApiKey": "AIzaSyAT0dGMcg_4xhG3s-GJXdXxvclN-anRLj4"
+        "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
       "package": "com.natureup.health4",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAT0dGMcg_4xhG3s-GJXdXxvclN-anRLj4"
+          "apiKey": "$GOOGLE_MAPS_API_KEY"
         }
       }
     },
