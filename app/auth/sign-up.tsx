@@ -4,68 +4,35 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { Button, Input, LoadingSpinner } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../constants/theme';
-import { Mail, Lock, User } from 'lucide-react-native';
+import { User } from 'lucide-react-native';
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const { signUp, isLoading: authLoading } = useAuth();
+  const { signUpWithUsername, isLoading: authLoading } = useAuth();
 
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const validateForm = () => {
-    if (!fullName.trim()) {
-      setError('Please enter your full name');
-      return false;
-    }
-
-    if (!email.trim()) {
-      setError('Please enter your email');
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-
-    if (!password) {
-      setError('Please enter a password');
-      return false;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return false;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-
-    return true;
-  };
 
   const handleSignUp = async () => {
     setError('');
 
-    if (!validateForm()) {
+    if (!username.trim()) {
+      setError('Please enter a username');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const { error: signUpError } = await signUp(email, password, fullName);
+      const { error: signUpError } = await signUpWithUsername(username.trim());
 
       if (signUpError) {
-        setError(signUpError.message || 'Failed to create account');
+        if (signUpError.message?.includes('already taken')) {
+          setError('This username is already taken. Please choose another.');
+        } else {
+          setError(signUpError.message || 'Failed to create account');
+        }
         setIsLoading(false);
         return;
       }
@@ -93,52 +60,21 @@ export default function SignUpScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>
-            Join NatureUP Health to start your wellness journey
+            Choose a username to get started
           </Text>
         </View>
 
         <View style={styles.form}>
           <Input
-            label="Full Name"
-            placeholder="Enter your full name"
-            value={fullName}
-            onChangeText={setFullName}
-            autoCapitalize="words"
+            label="Username"
+            placeholder="Choose your username"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
             leftIcon={<User size={20} color={colors.textSecondary} />}
-          />
-
-          <Input
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            leftIcon={<Mail size={20} color={colors.textSecondary} />}
-          />
-
-          <Input
-            label="Password"
-            placeholder="Create a password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password-new"
-            leftIcon={<Lock size={20} color={colors.textSecondary} />}
-            helperText="At least 8 characters"
-          />
-
-          <Input
-            label="Confirm Password"
-            placeholder="Confirm your password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password-new"
-            leftIcon={<Lock size={20} color={colors.textSecondary} />}
+            returnKeyType="go"
+            onSubmitEditing={handleSignUp}
           />
 
           {error && (

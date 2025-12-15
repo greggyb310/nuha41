@@ -2,25 +2,33 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
-import { Button, LoadingSpinner } from '../../components';
+import { Button, Input, LoadingSpinner } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../constants/theme';
+import { User } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signInAsGuest, isLoading: authLoading } = useAuth();
+  const { signInWithUsername, isLoading: authLoading } = useAuth();
 
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleGuestLogin = async () => {
+  const handleLogin = async () => {
     setError('');
+
+    if (!username.trim()) {
+      setError('Please enter a username');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { error: signInError } = await signInAsGuest();
+      const { error: signInError } = await signInWithUsername(username.trim());
 
       if (signInError) {
-        setError('Unable to continue. Please try again.');
+        setError('Username not found. Please sign up first.');
         setIsLoading(false);
         return;
       }
@@ -53,6 +61,18 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
+          <Input
+            label="Username"
+            placeholder="Enter your username"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+            leftIcon={<User size={20} color={colors.textSecondary} />}
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
+          />
+
           {error && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
@@ -60,14 +80,24 @@ export default function LoginScreen() {
           )}
 
           <Button
-            title="Continue as Guest"
-            onPress={handleGuestLogin}
+            title="Sign In"
+            onPress={handleLogin}
             loading={isLoading}
             disabled={isLoading}
             fullWidth
             size="large"
             style={styles.loginButton}
           />
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>New to NatureUP? </Text>
+            <Button
+              title="Sign Up"
+              variant="ghost"
+              size="small"
+              onPress={() => router.push('/auth/sign-up')}
+            />
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -120,5 +150,15 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: spacing.md,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.xl,
+  },
+  footerText: {
+    fontSize: typography.sizes.base,
+    color: colors.textSecondary,
   },
 });

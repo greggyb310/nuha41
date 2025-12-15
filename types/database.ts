@@ -21,6 +21,11 @@ export interface Database {
         Insert: Omit<FavoriteExcursion, 'id' | 'created_at'>;
         Update: Partial<Omit<FavoriteExcursion, 'id' | 'created_at'>>;
       };
+      usernames: {
+        Row: Username;
+        Insert: Omit<Username, 'id' | 'created_at'>;
+        Update: Partial<Omit<Username, 'id' | 'created_at'>>;
+      };
     };
   };
 }
@@ -28,6 +33,7 @@ export interface Database {
 export interface UserProfile {
   id: string;
   user_id: string;
+  username: string | null;
   full_name: string | null;
   health_goals: string[] | null;
   preferences: UserPreferences | null;
@@ -95,6 +101,13 @@ export interface FavoriteExcursion {
   id: string;
   user_id: string;
   excursion_id: string;
+  created_at: string;
+}
+
+export interface Username {
+  id: string;
+  username: string;
+  user_id: string;
   created_at: string;
 }
 

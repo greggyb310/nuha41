@@ -14,6 +14,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInAsGuest: () => Promise<{ error: Error | null }>;
+  signUpWithUsername: (username: string) => Promise<{ error: Error | null }>;
+  signInWithUsername: (username: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;
@@ -114,6 +116,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signUpWithUsername = async (username: string) => {
+    try {
+      const { error } = await authService.signUpWithUsername(username);
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  const signInWithUsername = async (username: string) => {
+    try {
+      const { error } = await authService.signInWithUsername(username);
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await authService.signOut();
@@ -190,6 +210,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signIn,
     signInAsGuest,
+    signUpWithUsername,
+    signInWithUsername,
     signOut,
     resetPassword,
     updateProfile,
