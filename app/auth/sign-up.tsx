@@ -37,7 +37,7 @@ export default function SignUpScreen() {
         return;
       }
 
-      router.replace('/home');
+      router.replace('/profile/setup');
     } catch (err) {
       setError('An unexpected error occurred');
       setIsLoading(false);
