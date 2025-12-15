@@ -13,6 +13,7 @@ interface AuthContextType {
   hasCompletedProfile: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInAsGuest: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;
@@ -104,6 +105,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signInAsGuest = async () => {
+    try {
+      const { error } = await authService.signInAsGuest();
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await authService.signOut();
@@ -179,6 +189,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     hasCompletedProfile,
     signUp,
     signIn,
+    signInAsGuest,
     signOut,
     resetPassword,
     updateProfile,

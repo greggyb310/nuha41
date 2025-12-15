@@ -2,53 +2,25 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
-import { Button, Input, LoadingSpinner } from '../../components';
+import { Button, LoadingSpinner } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../constants/theme';
-import { Mail, Lock } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, isLoading: authLoading } = useAuth();
+  const { signInAsGuest, isLoading: authLoading } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const validateForm = () => {
-    if (!email.trim()) {
-      setError('Please enter your email');
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-
-    if (!password) {
-      setError('Please enter your password');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleLogin = async () => {
+  const handleGuestLogin = async () => {
     setError('');
-
-    if (!validateForm()) {
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const { error: signInError } = await signIn(email, password);
+      const { error: signInError } = await signInAsGuest();
 
       if (signInError) {
-        setError(signInError.message || 'Invalid email or password');
+        setError('Unable to continue. Please try again.');
         setIsLoading(false);
         return;
       }
@@ -74,45 +46,13 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.title}>Welcome</Text>
           <Text style={styles.subtitle}>
-            Sign in to continue your wellness journey
+            Start your wellness journey with NatureUP Health
           </Text>
         </View>
 
         <View style={styles.form}>
-          <Input
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            leftIcon={<Mail size={20} color={colors.textSecondary} />}
-          />
-
-          <Input
-            label="Password"
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password"
-            leftIcon={<Lock size={20} color={colors.textSecondary} />}
-          />
-
-          <View style={styles.forgotPasswordContainer}>
-            <Button
-              title="Forgot Password?"
-              variant="ghost"
-              size="small"
-              onPress={() => router.push('/auth/reset-password')}
-              style={styles.forgotPasswordButton}
-            />
-          </View>
-
           {error && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
@@ -120,24 +60,14 @@ export default function LoginScreen() {
           )}
 
           <Button
-            title="Sign In"
-            onPress={handleLogin}
+            title="Continue as Guest"
+            onPress={handleGuestLogin}
             loading={isLoading}
             disabled={isLoading}
             fullWidth
             size="large"
             style={styles.loginButton}
           />
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <Button
-              title="Sign Up"
-              variant="ghost"
-              size="small"
-              onPress={() => router.push('/auth/sign-up')}
-            />
-          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -152,32 +82,30 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: spacing.lg,
+    justifyContent: 'center',
   },
   header: {
-    marginTop: spacing['2xl'],
-    marginBottom: spacing.xl,
+    marginBottom: spacing['2xl'],
+    alignItems: 'center',
   },
   title: {
-    fontSize: typography.sizes['3xl'],
+    fontSize: typography.sizes['4xl'],
     fontWeight: typography.weights.bold,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: typography.sizes.base,
+    fontSize: typography.sizes.lg,
     color: colors.textSecondary,
-    lineHeight: typography.lineHeights.normal * typography.sizes.base,
+    lineHeight: typography.lineHeights.normal * typography.sizes.lg,
+    textAlign: 'center',
+    maxWidth: 400,
   },
   form: {
-    flex: 1,
-  },
-  forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginTop: -spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   errorContainer: {
     backgroundColor: colors.errorLight,
@@ -192,15 +120,5 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: spacing.md,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.xl,
-  },
-  footerText: {
-    fontSize: typography.sizes.base,
-    color: colors.textSecondary,
   },
 });
