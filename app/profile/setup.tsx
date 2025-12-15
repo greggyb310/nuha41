@@ -54,6 +54,15 @@ export default function ProfileSetupScreen() {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || '');
+      setSelectedGoals(profile.health_goals || []);
+      setSelectedActivities((profile.preferences as any)?.activities || []);
+      setSelectedDifficulty((profile.preferences as any)?.difficulty || 'moderate');
+    }
+  }, [profile]);
+
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         if (nameInputRef.current?.isFocused()) {
