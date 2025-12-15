@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { databaseService } from './database';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import type { UserProfile } from '../types/database';
+import Constants from 'expo-constants';
 
 export interface AuthResponse {
   user: User | null;
@@ -50,13 +51,16 @@ export const authService = {
 
   async signUpWithUsername(username: string): Promise<AuthResponse> {
     try {
+      const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/username-auth`,
+        `${supabaseUrl}/functions/v1/username-auth`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
           },
           body: JSON.stringify({ action: 'signup', username }),
         }
@@ -109,13 +113,16 @@ export const authService = {
 
   async signInWithUsername(username: string): Promise<AuthResponse> {
     try {
+      const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/username-auth`,
+        `${supabaseUrl}/functions/v1/username-auth`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
           },
           body: JSON.stringify({ action: 'login', username }),
         }
