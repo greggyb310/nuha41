@@ -56,7 +56,7 @@ export interface ExcursionPreferences {
   duration_minutes?: number;
   distance_km?: number;
   difficulty?: 'easy' | 'moderate' | 'challenging';
-  terrain?: 'forest' | 'beach' | 'mountain' | 'park' | 'urban';
+  terrain?: ('forest' | 'beach' | 'mountain' | 'park' | 'urban')[];
   time_of_day?: 'morning' | 'afternoon' | 'evening';
 }
 
@@ -75,7 +75,7 @@ export interface WeatherData {
   conditions: string;
 }
 
-export interface ExcursionResponse {
+export interface ExcursionOption {
   title: string;
   description: string;
   route_data: {
@@ -102,6 +102,11 @@ export interface ExcursionResponse {
   duration_minutes: number;
   distance_km: number;
   difficulty: 'easy' | 'moderate' | 'challenging';
+  therapeutic_benefits?: string[];
+}
+
+export interface ExcursionResponse {
+  options: ExcursionOption[];
   weather_context?: WeatherData;
 }
 

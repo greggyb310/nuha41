@@ -19,7 +19,7 @@ export default function CreateExcursionScreen() {
   const [preferences, setPreferences] = useState<ExcursionPreferences>({
     duration_minutes: 30,
     difficulty: 'easy',
-    terrain: 'park',
+    terrain: ['park'],
     time_of_day: 'morning',
   });
   const [isCreating, setIsCreating] = useState(false);
@@ -71,22 +71,16 @@ export default function CreateExcursionScreen() {
       console.log("[CreateExcursion] session.access_token prefix:", session?.access_token?.slice(0, 25));
       const excursionResponse = await assistantAPI.createExcursion(request, session.access_token);
 
-      const { data: savedExcursion, error: dbError } = await databaseService.createExcursion({
-        user_id: user.id,
-        title: excursionResponse.title,
-        description: excursionResponse.description || null,
-        route_data: excursionResponse.route_data,
-        duration_minutes: excursionResponse.duration_minutes || null,
-        distance_km: excursionResponse.distance_km || null,
-        difficulty: excursionResponse.difficulty || null,
-        completed_at: null,
-      });
-
-      if (dbError || !savedExcursion) {
-        throw new Error(dbError?.message || 'Failed to save excursion');
+      if (!excursionResponse.options || excursionResponse.options.length === 0) {
+        throw new Error('No excursion options were generated. Please try again.');
       }
 
-      router.push(`/excursions/${savedExcursion.id}`);
+      router.push({
+        pathname: '/excursions/choices',
+        params: {
+          options: JSON.stringify(excursionResponse.options),
+        },
+      });
     } catch (err) {
       console.error('Error creating excursion:', err);
 
@@ -191,26 +185,36 @@ export default function CreateExcursionScreen() {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Terrain</Text>
+        <Text style={styles.sectionDescription}>Select one or more terrain types</Text>
         <View style={styles.optionGroup}>
-          {terrainOptions.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={[
-                styles.optionButton,
-                preferences.terrain === option.value && styles.optionButtonActive,
-              ]}
-              onPress={() => setPreferences({ ...preferences, terrain: option.value })}
-            >
-              <Text
+          {terrainOptions.map((option) => {
+            const isSelected = preferences.terrain?.includes(option.value) || false;
+            return (
+              <TouchableOpacity
+                key={option.value}
                 style={[
-                  styles.optionButtonText,
-                  preferences.terrain === option.value && styles.optionButtonTextActive,
+                  styles.optionButton,
+                  isSelected && styles.optionButtonActive,
                 ]}
+                onPress={() => {
+                  const currentTerrain = preferences.terrain || [];
+                  const newTerrain = isSelected
+                    ? currentTerrain.filter(t => t !== option.value)
+                    : [...currentTerrain, option.value];
+                  setPreferences({ ...preferences, terrain: newTerrain });
+                }}
               >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.optionButtonText,
+                    isSelected && styles.optionButtonTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -284,7 +288,13 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.semibold,
     color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  sectionDescription: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
     marginBottom: spacing.md,
+    lineHeight: typography.lineHeights.normal * typography.sizes.sm,
   },
   optionGroup: {
     flexDirection: 'row',

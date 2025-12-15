@@ -8,7 +8,7 @@ interface ExcursionRequest {
     duration_minutes?: number;
     distance_km?: number;
     difficulty?: "easy" | "moderate" | "challenging";
-    terrain?: "forest" | "beach" | "mountain" | "park" | "urban";
+    terrain?: ("forest" | "beach" | "mountain" | "park" | "urban")[];
     time_of_day?: "morning" | "afternoon" | "evening";
   };
   location: {
@@ -34,7 +34,7 @@ interface ExcursionRequest {
 function formatExcursionPrompt(req: ExcursionRequest): string {
   const parts = [];
 
-  parts.push("Create a personalized nature therapy excursion with the following parameters:");
+  parts.push("Create 1-3 personalized nature therapy excursion options with the following parameters:");
   parts.push(`\nLocation: ${req.location.address || `${req.location.latitude}, ${req.location.longitude}`}`);
 
   if (req.preferences.duration_minutes) {
@@ -49,8 +49,8 @@ function formatExcursionPrompt(req: ExcursionRequest): string {
     parts.push(`Difficulty: ${req.preferences.difficulty}`);
   }
 
-  if (req.preferences.terrain) {
-    parts.push(`Preferred terrain: ${req.preferences.terrain}`);
+  if (req.preferences.terrain && req.preferences.terrain.length > 0) {
+    parts.push(`Preferred terrain types: ${req.preferences.terrain.join(", ")}`);
   }
 
   if (req.preferences.time_of_day) {
@@ -70,6 +70,8 @@ function formatExcursionPrompt(req: ExcursionRequest): string {
       parts.push(`Health goals: ${req.health_profile.health_goals.join(", ")}`);
     }
   }
+
+  parts.push("\nPlease generate multiple excursion options that vary in approach, route, or therapeutic focus.");
 
   return parts.join("\n");
 }
@@ -99,73 +101,90 @@ async function createExcursion(req: ExcursionRequest) {
     }
 
     const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
-    const planExcursionCall = toolCalls.find(call => call.function.name === "plan_excursion");
+    const planExcursionCalls = toolCalls.filter(call => call.function.name === "plan_excursion");
 
-    if (!planExcursionCall) {
-      throw new Error("No plan_excursion tool call found");
+    if (planExcursionCalls.length === 0) {
+      throw new Error("No plan_excursion tool calls found");
     }
 
-    const excursionDataRaw = planExcursionCall.function.arguments;
-    console.log("Raw excursion plan arguments:", excursionDataRaw);
+    console.log(`Processing ${planExcursionCalls.length} excursion option(s)`);
 
-    let excursionData: any;
-    try {
-      excursionData = JSON.parse(excursionDataRaw);
-    } catch (parseError) {
-      console.error("Failed to parse excursion plan arguments:", parseError);
-      throw new Error("Excursion planner returned invalid data. Please check OpenAI Assistant configuration.");
+    const excursionOptions = [];
+
+    for (const call of planExcursionCalls) {
+      const excursionDataRaw = call.function.arguments;
+      console.log("Raw excursion plan arguments:", excursionDataRaw);
+
+      let excursionData: any;
+      try {
+        excursionData = JSON.parse(excursionDataRaw);
+      } catch (parseError) {
+        console.error("Failed to parse excursion plan arguments:", parseError);
+        continue;
+      }
+
+      console.log("Excursion plan from tool call (parsed):", excursionData);
+
+      if (
+        !excursionData ||
+        !Array.isArray(excursionData.waypoints) ||
+        excursionData.waypoints.length === 0
+      ) {
+        console.warn("Skipping invalid excursion plan with no waypoints");
+        continue;
+      }
+
+      const firstWaypoint = excursionData.waypoints[0];
+      const lastWaypoint = excursionData.waypoints[excursionData.waypoints.length - 1];
+
+      if (!firstWaypoint || !lastWaypoint) {
+        console.warn("Skipping invalid excursion plan with missing waypoints");
+        continue;
+      }
+
+      if (
+        typeof firstWaypoint.latitude !== "number" ||
+        typeof firstWaypoint.longitude !== "number" ||
+        typeof lastWaypoint.latitude !== "number" ||
+        typeof lastWaypoint.longitude !== "number"
+      ) {
+        console.warn("Skipping invalid excursion plan with invalid coordinates");
+        continue;
+      }
+
+      excursionOptions.push({
+        title: excursionData.title,
+        description: excursionData.summary || excursionData.description,
+        route_data: {
+          waypoints: excursionData.waypoints,
+          start_location: {
+            latitude: firstWaypoint.latitude,
+            longitude: firstWaypoint.longitude,
+            name: firstWaypoint.name,
+            description: firstWaypoint.description,
+          },
+          end_location: {
+            latitude: lastWaypoint.latitude,
+            longitude: lastWaypoint.longitude,
+            name: lastWaypoint.name,
+            description: lastWaypoint.description,
+          },
+          terrain_type: excursionData.terrain_type,
+          elevation_gain: 0
+        },
+        duration_minutes: excursionData.duration_minutes,
+        distance_km: excursionData.distance_km,
+        difficulty: excursionData.difficulty,
+        therapeutic_benefits: excursionData.therapeutic_benefits,
+      });
     }
 
-    console.log("Excursion plan from tool call (parsed):", excursionData);
-
-    if (
-      !excursionData ||
-      !Array.isArray(excursionData.waypoints) ||
-      excursionData.waypoints.length === 0
-    ) {
-      throw new Error("Excursion planner returned no waypoints. Please check OpenAI Assistant configuration or try again.");
-    }
-
-    const firstWaypoint = excursionData.waypoints[0];
-    const lastWaypoint = excursionData.waypoints[excursionData.waypoints.length - 1];
-
-    if (!firstWaypoint || !lastWaypoint) {
-      throw new Error("Invalid waypoint data: missing first or last waypoint.");
-    }
-
-    if (
-      typeof firstWaypoint.latitude !== "number" ||
-      typeof firstWaypoint.longitude !== "number" ||
-      typeof lastWaypoint.latitude !== "number" ||
-      typeof lastWaypoint.longitude !== "number"
-    ) {
-      throw new Error("Invalid waypoint data: latitude and longitude must be numbers.");
+    if (excursionOptions.length === 0) {
+      throw new Error("No valid excursion options could be generated. Please try again.");
     }
 
     return {
-      title: excursionData.title,
-      description: excursionData.summary || excursionData.description,
-      route_data: {
-        waypoints: excursionData.waypoints,
-        start_location: {
-          latitude: firstWaypoint.latitude,
-          longitude: firstWaypoint.longitude,
-          name: firstWaypoint.name,
-          description: firstWaypoint.description,
-        },
-        end_location: {
-          latitude: lastWaypoint.latitude,
-          longitude: lastWaypoint.longitude,
-          name: lastWaypoint.name,
-          description: lastWaypoint.description,
-        },
-        terrain_type: excursionData.terrain_type,
-        elevation_gain: 0
-      },
-      duration_minutes: excursionData.duration_minutes,
-      distance_km: excursionData.distance_km,
-      difficulty: excursionData.difficulty,
-      therapeutic_benefits: excursionData.therapeutic_benefits,
+      options: excursionOptions
     };
   } catch (error) {
     console.error("Error creating excursion:", error);
