@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
@@ -8,14 +9,17 @@ import { LoadingSpinner, Button, WeatherCard, Map } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../constants/theme';
 import { Settings, User, LogOut, X } from 'lucide-react-native';
 
+const DEFAULT_COORDS = { latitude: 37.7749, longitude: -122.4194 };
+
 export default function HomeScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading, profile, hasCompletedProfile, signOut } = useAuth();
   const { coordinates, loading: locationLoading, error: locationError, getCurrentLocation } = useLocation();
+  const displayCoordinates = coordinates || DEFAULT_COORDS;
   const { weather, loading: weatherLoading, error: weatherError, refresh: refreshWeather } = useWeather(
-    coordinates?.latitude,
-    coordinates?.longitude
+    displayCoordinates.latitude,
+    displayCoordinates.longitude
   );
   const [showSettings, setShowSettings] = useState(false);
 
@@ -52,22 +56,21 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.greeting}>
             Hello{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}!
           </Text>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={() => {
-              console.log('Settings button pressed');
-              setShowSettings(true);
-            }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          <Pressable
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed && styles.settingsButtonPressed
+            ]}
+            onPress={() => setShowSettings(true)}
           >
             <Settings size={28} color={colors.primary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -79,42 +82,26 @@ export default function HomeScreen() {
         <Text style={styles.title}>NatureUP Health</Text>
         <Text style={styles.subtitle}>Your personalized nature therapy companion</Text>
 
-        {locationLoading && (
-          <View style={styles.locationCard}>
-            <LoadingSpinner size="small" />
-            <Text style={styles.locationText}>Getting your location...</Text>
-          </View>
-        )}
-
-        {!locationLoading && coordinates && (
-          <View style={styles.mapContainer}>
-            <Map
-              latitude={coordinates.latitude}
-              longitude={coordinates.longitude}
-              showMarker={true}
-            />
-          </View>
-        )}
-
-        {!locationLoading && !coordinates && locationError && (
-          <View style={styles.locationCard}>
-            <Text style={styles.errorText}>{locationError}</Text>
-            <Button
-              title="Retry"
-              onPress={getCurrentLocation}
-              style={styles.retryButton}
-            />
-          </View>
-        )}
-
-        {coordinates && (
-          <WeatherCard
-            weather={weather}
-            loading={weatherLoading}
-            error={weatherError}
-            onRefresh={refreshWeather}
+        <View style={styles.mapContainer}>
+          <Map
+            latitude={displayCoordinates.latitude}
+            longitude={displayCoordinates.longitude}
+            showMarker={true}
           />
-        )}
+          {locationLoading && (
+            <View style={styles.mapOverlay}>
+              <LoadingSpinner size="small" />
+              <Text style={styles.locationText}>Getting your location...</Text>
+            </View>
+          )}
+        </View>
+
+        <WeatherCard
+          weather={weather}
+          loading={weatherLoading}
+          error={weatherError}
+          onRefresh={refreshWeather}
+        />
 
         <View style={styles.quickActions}>
           <Button
@@ -173,7 +160,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -196,7 +183,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   settingsButton: {
-    padding: spacing.xs,
+    padding: spacing.md,
+    borderRadius: borderRadius.full,
+  },
+  settingsButtonPressed: {
+    backgroundColor: colors.accent,
+    opacity: 0.8,
   },
   greeting: {
     fontSize: typography.sizes['3xl'],
@@ -264,6 +256,18 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     marginBottom: spacing.lg,
     alignSelf: 'center',
+    position: 'relative',
+  },
+  mapOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: spacing.md,
   },
   modalOverlay: {
     flex: 1,
