@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../hooks/useLocation';
 import { useWeather } from '../../hooks/useWeather';
-import { LoadingSpinner, Button, WeatherCard } from '../../components';
+import { LoadingSpinner, Button, WeatherCard, Map } from '../../components';
 import { colors, typography, spacing } from '../../constants/theme';
 
 export default function HomeScreen() {
@@ -98,6 +98,16 @@ export default function HomeScreen() {
             title="Retry"
             onPress={getCurrentLocation}
             style={styles.retryButton}
+          />
+        </View>
+      )}
+
+      {coordinates && (
+        <View style={styles.mapContainer}>
+          <Map
+            latitude={coordinates.latitude}
+            longitude={coordinates.longitude}
+            showMarker={true}
           />
         </View>
       )}
@@ -254,5 +264,10 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 120,
+  },
+  mapContainer: {
+    width: '100%',
+    maxWidth: 400,
+    marginBottom: spacing.lg,
   },
 });
