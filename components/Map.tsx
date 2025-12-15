@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { colors, typography, spacing } from '../constants/theme';
 
 interface MarkerData {
@@ -57,7 +57,7 @@ export function Map({
   return (
     <MapView
       style={styles.map}
-      provider={PROVIDER_DEFAULT}
+      provider={PROVIDER_GOOGLE}
       initialRegion={region}
       showsUserLocation={false}
       showsMyLocationButton={false}

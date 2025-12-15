@@ -13,6 +13,17 @@
         "NSMicrophoneUsageDescription": "NatureUP Health needs access to your microphone for voice coaching sessions.",
         "NSLocationWhenInUseUsageDescription": "NatureUP Health needs your location to suggest nearby nature excursions.",
         "NSCameraUsageDescription": "NatureUP Health needs camera access to capture nature moments during excursions."
+      },
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+      }
+    },
+    "android": {
+      "package": "com.natureup.health4",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+        }
       }
     },
     "plugins": [
