@@ -36,11 +36,11 @@ This project uses React 19.1.0 (required by Expo SDK 54 + React Native 0.81). Th
 
 - `/app` - expo-router screens
 - `/components` - Reusable UI components
-- `/services` - API clients (Supabase, OpenAI)
+- `/services` - API clients (Supabase, OpenAI, Google Maps, Openweather)
 - `/types` - TypeScript interfaces
 - `/hooks` - Custom React hooks
 - `/constants` - Theme, colors, config
 
 ## Bundle Identifier
 
-`com.natureup.health4`
+`com.natureup.health41`
