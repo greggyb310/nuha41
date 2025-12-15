@@ -15,18 +15,10 @@
         "NSLocationWhenInUseUsageDescription": "NatureUP Health needs your location to suggest nearby nature excursions.",
         "NSCameraUsageDescription": "NatureUP Health needs camera access to capture nature moments during excursions.",
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "config": {
-        "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
-      "package": "com.natureup.health41",
-      "config": {
-        "googleMaps": {
-          "apiKey": "$GOOGLE_MAPS_API_KEY"
-        }
-      }
+      "package": "com.natureup.health41"
     },
     "plugins": [
       "expo-router",
