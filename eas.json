@@ -10,6 +10,7 @@
         "buildConfiguration": "Debug"
       },
       "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY",
         "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     },
@@ -19,6 +20,7 @@
         "buildConfiguration": "Release"
       },
       "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY",
         "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     },
@@ -27,6 +29,7 @@
         "buildConfiguration": "Release"
       },
       "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY",
         "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
     }
