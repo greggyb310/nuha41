@@ -18,6 +18,8 @@ interface LoginRequest {
 
 type AuthRequest = SignupRequest | LoginRequest;
 
+const INTERNAL_PASSWORD = Deno.env.get("USERNAME_AUTH_PASSWORD") || "NatureUP_Internal_2024!";
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -34,12 +36,14 @@ Deno.serve(async (req: Request) => {
       throw new Error("Missing Supabase configuration");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
     });
+
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || supabaseServiceKey);
 
     const body = (await req.json()) as AuthRequest;
     const { action, username } = body;
@@ -55,9 +59,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const normalizedUsername = username.trim().toLowerCase();
+    const syntheticEmail = `${normalizedUsername}@natureup.internal`;
 
     if (action === "signup") {
-      const { data: existingUser } = await supabase
+      const { data: existingUser } = await supabaseAdmin
         .from("usernames")
         .select("id")
         .ilike("username", normalizedUsername)
@@ -73,8 +78,9 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: `${normalizedUsername}@natureup.internal`,
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: syntheticEmail,
+        password: INTERNAL_PASSWORD,
         email_confirm: true,
         user_metadata: { username: normalizedUsername },
       });
@@ -92,7 +98,7 @@ Deno.serve(async (req: Request) => {
 
       const userId = authData.user.id;
 
-      const { error: usernameError } = await supabase
+      const { error: usernameError } = await supabaseAdmin
         .from("usernames")
         .insert({
           username: normalizedUsername,
@@ -101,7 +107,7 @@ Deno.serve(async (req: Request) => {
 
       if (usernameError) {
         console.error("Failed to create username record:", usernameError);
-        await supabase.auth.admin.deleteUser(userId);
+        await supabaseAdmin.auth.admin.deleteUser(userId);
         return new Response(
           JSON.stringify({ error: "Failed to create account" }),
           {
@@ -111,7 +117,7 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const { error: profileError } = await supabase
+      const { error: profileError } = await supabaseAdmin
         .from("user_profiles")
         .insert({
           user_id: userId,
@@ -123,14 +129,13 @@ Deno.serve(async (req: Request) => {
         console.error("Failed to create profile:", profileError);
       }
 
-      const { data: sessionData, error: sessionError } =
-        await supabase.auth.admin.generateLink({
-          type: "magiclink",
-          email: `${normalizedUsername}@natureup.internal`,
-        });
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.signInWithPassword({
+        email: syntheticEmail,
+        password: INTERNAL_PASSWORD,
+      });
 
-      if (sessionError || !sessionData) {
-        console.error("Failed to generate session:", sessionError);
+      if (sessionError || !sessionData.session) {
+        console.error("Failed to create session:", sessionError);
         return new Response(
           JSON.stringify({ error: "Failed to create session" }),
           {
@@ -142,8 +147,11 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify({
-          user: authData.user,
-          session: sessionData.properties,
+          user: sessionData.user,
+          session: {
+            access_token: sessionData.session.access_token,
+            refresh_token: sessionData.session.refresh_token,
+          },
         }),
         {
           status: 200,
@@ -151,7 +159,7 @@ Deno.serve(async (req: Request) => {
         }
       );
     } else if (action === "login") {
-      const { data: usernameRecord, error: lookupError } = await supabase
+      const { data: usernameRecord, error: lookupError } = await supabaseAdmin
         .from("usernames")
         .select("user_id")
         .ilike("username", normalizedUsername)
@@ -168,7 +176,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const { data: userData, error: userError } =
-        await supabase.auth.admin.getUserById(usernameRecord.user_id);
+        await supabaseAdmin.auth.admin.getUserById(usernameRecord.user_id);
 
       if (userError || !userData.user) {
         console.error("Failed to get user:", userError);
@@ -181,14 +189,13 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const { data: sessionData, error: sessionError } =
-        await supabase.auth.admin.generateLink({
-          type: "magiclink",
-          email: userData.user.email!,
-        });
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.signInWithPassword({
+        email: userData.user.email!,
+        password: INTERNAL_PASSWORD,
+      });
 
-      if (sessionError || !sessionData) {
-        console.error("Failed to generate session:", sessionError);
+      if (sessionError || !sessionData.session) {
+        console.error("Failed to create session:", sessionError);
         return new Response(
           JSON.stringify({ error: "Failed to create session" }),
           {
@@ -200,8 +207,11 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify({
-          user: userData.user,
-          session: sessionData.properties,
+          user: sessionData.user,
+          session: {
+            access_token: sessionData.session.access_token,
+            refresh_token: sessionData.session.refresh_token,
+          },
         }),
         {
           status: 200,
