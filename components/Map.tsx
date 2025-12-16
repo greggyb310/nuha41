@@ -6,14 +6,12 @@ import { colors, typography, spacing, borderRadius } from '../constants/theme';
 let MapView: any = null;
 let Marker: any = null;
 let Polyline: any = null;
-let PROVIDER_GOOGLE: any = null;
 
 try {
   const maps = require('react-native-maps');
   MapView = maps.default;
   Marker = maps.Marker;
   Polyline = maps.Polyline;
-  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
 } catch (e) {
   console.log('[Map] react-native-maps not available');
 }
@@ -88,9 +86,8 @@ export function Map({
     <View style={styles.mapWrapper}>
       <MapView
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
         initialRegion={region}
-        showsUserLocation={false}
+        showsUserLocation={true}
         showsMyLocationButton={false}
         showsCompass={true}
         showsScale={false}
