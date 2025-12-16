@@ -1,153 +1,153 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 
-const GOOGLE_MAPS_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
-
-if (!GOOGLE_MAPS_API_KEY) {
-  throw new Error("GOOGLE_MAPS_API_KEY environment variable is required");
-}
-
-interface PlacesRequest {
+type PlacesRequest = {
   latitude: number;
   longitude: number;
   radius?: number;
-}
+};
 
-interface Place {
-  place_id: string;
+type Place = {
+  id: string;
   name: string;
-  types: string[];
-  vicinity?: string;
-  rating?: number;
-  user_ratings_total?: number;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
-  photos?: Array<{
-    photo_reference: string;
-    height: number;
-    width: number;
-  }>;
+  latitude: number;
+  longitude: number;
+  kind: string;
+  distance_m: number;
+};
+
+function toRad(n: number) {
+  return (n * Math.PI) / 180;
 }
 
-interface PlacesResponse {
-  places: Place[];
-  status: string;
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-const NATURE_TYPES = [
-  "park",
-  "natural_feature",
-  "tourist_attraction",
-  "point_of_interest",
-];
-
-async function searchNearbyPlaces(
-  lat: number,
-  lng: number,
-  radius: number
-): Promise<PlacesResponse> {
-  const url = new URL("https://maps.googleapis.com/maps/api/place/nearbysearch/json");
-  url.searchParams.set("location", `${lat},${lng}`);
-  url.searchParams.set("radius", radius.toString());
-  url.searchParams.set("type", "park");
-  url.searchParams.set("key", GOOGLE_MAPS_API_KEY!);
-
-  try {
-    const response = await fetch(url.toString());
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Google Places API error: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-
-    if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-      throw new Error(`Google Places API returned status: ${data.status}`);
-    }
-
-    const filteredPlaces = (data.results || []).filter((place: Place) => {
-      return place.types?.some((type: string) => NATURE_TYPES.includes(type));
-    });
-
-    return {
-      places: filteredPlaces.slice(0, 10),
-      status: data.status,
-    };
-  } catch (error) {
-    console.error("Error fetching places:", error);
-    throw error;
+function pickCenter(el: any): { lat: number; lon: number } | null {
+  if (typeof el.lat === "number" && typeof el.lon === "number") return { lat: el.lat, lon: el.lon };
+  if (el.center && typeof el.center.lat === "number" && typeof el.center.lon === "number") {
+    return { lat: el.center.lat, lon: el.center.lon };
   }
+  return null;
 }
 
-Deno.serve(async (req: Request) => {
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
+Deno.serve(async (req) => {
+  const cors = handleCors(req);
+  if (cors) return cors;
 
   try {
-    const body: PlacesRequest = await req.json();
-
-    if (typeof body.latitude !== "number" || typeof body.longitude !== "number") {
-      return new Response(
-        JSON.stringify({ error: "Valid latitude and longitude are required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    const body = (await req.json()) as PlacesRequest;
+    const { latitude, longitude } = body;
+    const radius = Math.min(Math.max(body.radius ?? 8000, 500), 20000);
 
     if (
-      body.latitude < -90 ||
-      body.latitude > 90 ||
-      body.longitude < -180 ||
-      body.longitude > 180
+      typeof latitude !== "number" ||
+      typeof longitude !== "number" ||
+      Number.isNaN(latitude) ||
+      Number.isNaN(longitude)
     ) {
-      return new Response(
-        JSON.stringify({ error: "Invalid coordinates range" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Invalid latitude/longitude" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const radius = body.radius || 5000;
+    const query = `
+[out:json][timeout:25];
+(
+  node(around:${radius},${latitude},${longitude})[leisure=park];
+  way(around:${radius},${latitude},${longitude})[leisure=park];
 
-    if (radius < 100 || radius > 50000) {
-      return new Response(
-        JSON.stringify({ error: "Radius must be between 100 and 50000 meters" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+  node(around:${radius},${latitude},${longitude})[leisure=nature_reserve];
+  way(around:${radius},${latitude},${longitude})[leisure=nature_reserve];
+
+  node(around:${radius},${latitude},${longitude})[boundary=national_park];
+  relation(around:${radius},${latitude},${longitude})[boundary=national_park];
+
+  node(around:${radius},${latitude},${longitude})[tourism=trailhead];
+  node(around:${radius},${latitude},${longitude})[information=trailhead];
+
+  node(around:${radius},${latitude},${longitude})[tourism=picnic_site];
+);
+out center 60;
+`;
+
+    const overpassUrl = "https://overpass-api.de/api/interpreter";
+    const resp = await fetch(overpassUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+      body: `data=${encodeURIComponent(query)}`,
+    });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      return new Response(JSON.stringify({ error: "Overpass error", detail: t.slice(0, 300) }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const placesData = await searchNearbyPlaces(
-      body.latitude,
-      body.longitude,
-      radius
-    );
+    const json = await resp.json();
+    const elements: any[] = Array.isArray(json.elements) ? json.elements : [];
 
-    return new Response(JSON.stringify(placesData), {
+    const places: Place[] = elements
+      .map((el) => {
+        const center = pickCenter(el);
+        if (!center) return null;
+
+        const tags = el.tags ?? {};
+        const name = typeof tags.name === "string" ? tags.name : "Unnamed nature spot";
+        const kind =
+          tags.tourism === "trailhead" || tags.information === "trailhead"
+            ? "trailhead"
+            : tags.leisure === "park"
+              ? "park"
+              : tags.leisure === "nature_reserve"
+                ? "nature_reserve"
+                : tags.boundary === "national_park"
+                  ? "national_park"
+                  : tags.tourism === "picnic_site"
+                    ? "picnic_site"
+                    : "nature";
+
+        const distance_m = Math.round(haversineMeters(latitude, longitude, center.lat, center.lon));
+
+        return {
+          id: `${el.type}:${el.id}`,
+          name,
+          latitude: center.lat,
+          longitude: center.lon,
+          kind,
+          distance_m,
+        } as Place;
+      })
+      .filter((p): p is Place => Boolean(p))
+      .sort((a, b) => a.distance_m - b.distance_m)
+      .slice(0, 3);
+
+    return new Response(JSON.stringify({ places, status: "OK" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in places-lookup function:", error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    console.error("Error in places-lookup:", error);
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

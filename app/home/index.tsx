@@ -8,6 +8,8 @@ import { useWeather } from '../../hooks/useWeather';
 import { LoadingSpinner, Button, WeatherCard, Map } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../constants/theme';
 import { Settings, User, LogOut, X } from 'lucide-react-native';
+import { Place } from '../../types/places';
+import { fetchNearbyNature } from '../../services/places-api';
 
 const DEFAULT_COORDS = { latitude: 37.7749, longitude: -122.4194 };
 
@@ -22,6 +24,9 @@ export default function HomeScreen() {
     displayCoordinates.longitude
   );
   const [showSettings, setShowSettings] = useState(false);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [placesLoading, setPlacesLoading] = useState(false);
+  const [placesError, setPlacesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -35,6 +40,30 @@ export default function HomeScreen() {
       getCurrentLocation();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!coordinates) return;
+
+    (async () => {
+      try {
+        setPlacesLoading(true);
+        setPlacesError(null);
+
+        const res = await fetchNearbyNature({
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          radius: 8000,
+        });
+
+        setPlaces(res.places ?? []);
+      } catch (e) {
+        setPlacesError(e instanceof Error ? e.message : 'Failed to load nearby places');
+        setPlaces([]);
+      } finally {
+        setPlacesLoading(false);
+      }
+    })();
+  }, [coordinates]);
 
   if (isLoading) {
     return <LoadingSpinner fullScreen message="Loading..." />;
@@ -54,6 +83,12 @@ export default function HomeScreen() {
     setShowSettings(false);
     router.push('/profile/setup');
   };
+
+  const markers = places.map((p) => ({
+    latitude: p.latitude,
+    longitude: p.longitude,
+    title: `${p.name} (${Math.round(p.distance_m)}m)`,
+  }));
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -87,11 +122,14 @@ export default function HomeScreen() {
             latitude={displayCoordinates.latitude}
             longitude={displayCoordinates.longitude}
             showMarker={true}
+            markers={markers}
           />
-          {locationLoading && (
+          {(locationLoading || placesLoading) && (
             <View style={styles.mapOverlay}>
               <LoadingSpinner size="small" />
-              <Text style={styles.locationText}>Getting your location...</Text>
+              <Text style={styles.locationText}>
+                {locationLoading ? 'Getting your location...' : 'Finding nature spots...'}
+              </Text>
             </View>
           )}
         </View>

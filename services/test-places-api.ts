@@ -45,14 +45,10 @@ async function testPlacesLookup() {
       console.log("\nPlaces:");
       data.places.forEach((place: Place, index: number) => {
         console.log(`\n${index + 1}. ${place.name}`);
-        console.log(`   Types: ${place.types?.join(", ")}`);
-        console.log(`   Location: ${place.geometry?.location?.lat}, ${place.geometry?.location?.lng}`);
-        if (place.rating) {
-          console.log(`   Rating: ${place.rating} (${place.user_ratings_total} reviews)`);
-        }
-        if (place.vicinity) {
-          console.log(`   Address: ${place.vicinity}`);
-        }
+        console.log(`   Type: ${place.kind}`);
+        console.log(`   Location: ${place.latitude}, ${place.longitude}`);
+        console.log(`   Distance: ${place.distance_m}m (${(place.distance_m / 1000).toFixed(2)}km)`);
+        console.log(`   ID: ${place.id}`);
       });
     } else {
       console.log("No places found");

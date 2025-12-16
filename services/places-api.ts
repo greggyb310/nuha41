@@ -7,29 +7,34 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Missing Supabase environment variables');
 }
 
+export async function fetchNearbyNature(request: PlacesRequest): Promise<PlacesResponse> {
+  const url = `${SUPABASE_URL}/functions/v1/places-lookup`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY!,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY!}`,
+    },
+    body: JSON.stringify(request),
+  });
+
+  const data = (await res.json()) as PlacesResponse;
+
+  if (!res.ok) {
+    throw new Error(data?.error ?? 'places-lookup failed');
+  }
+
+  return data;
+}
+
 export const placesApi = {
   async searchNearby(request: PlacesRequest): Promise<PlacesResponse> {
-    const apiUrl = `${SUPABASE_URL}/functions/v1/places-lookup`;
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Places API error: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data as PlacesResponse;
+    return fetchNearbyNature(request);
   },
 
-  async findNatureSpots(latitude: number, longitude: number, radiusMeters: number = 5000): Promise<PlacesResponse> {
+  async findNatureSpots(latitude: number, longitude: number, radiusMeters: number = 8000): Promise<PlacesResponse> {
     return this.searchNearby({
       latitude,
       longitude,
