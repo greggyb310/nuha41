@@ -42,28 +42,33 @@ export default function HomeScreen() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!coordinates) return;
+    if (!coordinates || !isAuthenticated || isLoading) return;
 
-    (async () => {
-      try {
-        setPlacesLoading(true);
-        setPlacesError(null);
+    const timer = setTimeout(() => {
+      (async () => {
+        try {
+          setPlacesLoading(true);
+          setPlacesError(null);
 
-        const res = await fetchNearbyNature({
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude,
-          radius: 8000,
-        });
+          const res = await fetchNearbyNature({
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+            radius: 8000,
+          });
 
-        setPlaces(res.places ?? []);
-      } catch (e) {
-        setPlacesError(e instanceof Error ? e.message : 'Failed to load nearby places');
-        setPlaces([]);
-      } finally {
-        setPlacesLoading(false);
-      }
-    })();
-  }, [coordinates]);
+          setPlaces(res.places ?? []);
+        } catch (e) {
+          console.error('[HomeScreen] Places fetch error:', e);
+          setPlacesError(e instanceof Error ? e.message : 'Failed to load nearby places');
+          setPlaces([]);
+        } finally {
+          setPlacesLoading(false);
+        }
+      })();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [coordinates, isAuthenticated, isLoading]);
 
   if (isLoading) {
     return <LoadingSpinner fullScreen message="Loading..." />;

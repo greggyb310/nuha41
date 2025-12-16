@@ -1,21 +1,26 @@
 import { PlacesRequest, PlacesResponse } from '../types/places';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+function getEnvVars() {
+  const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Missing Supabase environment variables');
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
+  return { SUPABASE_URL, SUPABASE_ANON_KEY };
 }
 
 export async function fetchNearbyNature(request: PlacesRequest): Promise<PlacesResponse> {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = getEnvVars();
   const url = `${SUPABASE_URL}/functions/v1/places-lookup`;
 
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY!,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY!}`,
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     },
     body: JSON.stringify(request),
   });
