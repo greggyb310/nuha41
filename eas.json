@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 13.2.0"
+    "version": ">= 13.2.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -15,7 +16,7 @@
       }
     },
     "preview": {
-      "distribution": "internal",
+      "distribution": "store",
       "ios": {
         "buildConfiguration": "Release"
       },
@@ -25,6 +26,7 @@
       }
     },
     "production": {
+      "distribution": "store",
       "ios": {
         "buildConfiguration": "Release"
       },
