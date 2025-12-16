@@ -35,6 +35,11 @@
     }
   },
   "submit": {
+    "preview": {
+      "ios": {
+        "appleId": "your-apple-id@email.com"
+      }
+    },
     "production": {
       "ios": {
         "appleId": "your-apple-id@email.com",
