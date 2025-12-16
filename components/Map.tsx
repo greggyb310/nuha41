@@ -21,6 +21,7 @@ interface MarkerData {
   longitude: number;
   title?: string;
   description?: string;
+  pinColor?: string;
 }
 
 interface Region {
@@ -110,6 +111,7 @@ export function Map({
             coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
             title={marker.title}
             description={marker.description}
+            pinColor={marker.pinColor || colors.primary}
           />
         ))}
 

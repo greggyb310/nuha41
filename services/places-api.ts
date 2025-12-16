@@ -15,6 +15,8 @@ export async function fetchNearbyNature(request: PlacesRequest): Promise<PlacesR
   const { SUPABASE_URL, SUPABASE_ANON_KEY } = getEnvVars();
   const url = `${SUPABASE_URL}/functions/v1/places-lookup`;
 
+  console.log('[PlacesAPI] Fetching nearby nature:', request);
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -26,6 +28,8 @@ export async function fetchNearbyNature(request: PlacesRequest): Promise<PlacesR
   });
 
   const data = (await res.json()) as PlacesResponse;
+
+  console.log('[PlacesAPI] Response:', { status: res.status, placesCount: data.places?.length ?? 0 });
 
   if (!res.ok) {
     throw new Error(data?.error ?? 'places-lookup failed');

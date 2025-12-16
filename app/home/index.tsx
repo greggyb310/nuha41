@@ -56,6 +56,7 @@ export default function HomeScreen() {
             radius: 8000,
           });
 
+          console.log('[HomeScreen] Places received:', res.places?.length ?? 0, res.places);
           setPlaces(res.places ?? []);
         } catch (e) {
           console.error('[HomeScreen] Places fetch error:', e);
@@ -92,7 +93,9 @@ export default function HomeScreen() {
   const markers = places.map((p) => ({
     latitude: p.latitude,
     longitude: p.longitude,
-    title: `${p.name} (${Math.round(p.distance_m)}m)`,
+    title: p.name,
+    description: `${Math.round(p.distance_m)}m away`,
+    pinColor: '#228B22',
   }));
 
   return (
@@ -126,8 +129,14 @@ export default function HomeScreen() {
           <Map
             latitude={displayCoordinates.latitude}
             longitude={displayCoordinates.longitude}
-            showMarker={true}
+            showMarker={false}
             markers={markers}
+            initialRegion={{
+              latitude: displayCoordinates.latitude,
+              longitude: displayCoordinates.longitude,
+              latitudeDelta: 0.08,
+              longitudeDelta: 0.08,
+            }}
           />
           {(locationLoading || placesLoading) && (
             <View style={styles.mapOverlay}>
@@ -135,6 +144,16 @@ export default function HomeScreen() {
               <Text style={styles.locationText}>
                 {locationLoading ? 'Getting your location...' : 'Finding nature spots...'}
               </Text>
+            </View>
+          )}
+          {placesError && !placesLoading && (
+            <View style={styles.placesErrorContainer}>
+              <Text style={styles.placesErrorText}>{placesError}</Text>
+            </View>
+          )}
+          {!placesLoading && !placesError && places.length === 0 && coordinates && (
+            <View style={styles.noPlacesContainer}>
+              <Text style={styles.noPlacesText}>No nature spots found nearby</Text>
             </View>
           )}
         </View>
@@ -305,6 +324,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: spacing.md,
+  },
+  placesErrorContainer: {
+    position: 'absolute',
+    bottom: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    backgroundColor: 'rgba(220, 53, 69, 0.9)',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  placesErrorText: {
+    color: '#fff',
+    fontSize: typography.sizes.sm,
+    textAlign: 'center',
+  },
+  noPlacesContainer: {
+    position: 'absolute',
+    bottom: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  noPlacesText: {
+    color: '#fff',
+    fontSize: typography.sizes.sm,
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
