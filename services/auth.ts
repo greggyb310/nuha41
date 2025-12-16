@@ -54,15 +54,6 @@ export const authService = {
       const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-      if (!supabaseUrl || !supabaseAnonKey) {
-        console.error('[Auth] Missing Supabase credentials for username auth');
-        return {
-          user: null,
-          session: null,
-          error: { message: 'App not configured properly', name: 'ConfigError', status: 0 } as any
-        };
-      }
-
       const response = await fetch(
         `${supabaseUrl}/functions/v1/username-auth`,
         {
@@ -124,15 +115,6 @@ export const authService = {
     try {
       const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        console.error('[Auth] Missing Supabase credentials for username auth');
-        return {
-          user: null,
-          session: null,
-          error: { message: 'App not configured properly', name: 'ConfigError', status: 0 } as any
-        };
-      }
 
       const response = await fetch(
         `${supabaseUrl}/functions/v1/username-auth`,

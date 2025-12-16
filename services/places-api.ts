@@ -1,24 +1,18 @@
-import Constants from 'expo-constants';
 import { PlacesRequest, PlacesResponse } from '../types/places';
 
-function getEnvVars(): { SUPABASE_URL: string; SUPABASE_ANON_KEY: string } | null {
-  const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+function getEnvVars() {
+  const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.warn('[PlacesAPI] Missing Supabase environment variables');
-    return null;
+    throw new Error('Missing Supabase environment variables');
   }
 
   return { SUPABASE_URL, SUPABASE_ANON_KEY };
 }
 
 export async function fetchNearbyNature(request: PlacesRequest): Promise<PlacesResponse> {
-  const envVars = getEnvVars();
-  if (!envVars) {
-    return { places: [], status: 'error', error: 'Supabase not configured' };
-  }
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = envVars;
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = getEnvVars();
   const url = `${SUPABASE_URL}/functions/v1/places-lookup`;
 
   console.log('[PlacesAPI] Fetching nearby nature:', request);
