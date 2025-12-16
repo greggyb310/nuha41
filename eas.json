@@ -10,6 +10,8 @@
         "buildConfiguration": "Debug"
       },
       "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://osfpvrbnudanwzffavem.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zZnB2cmJudWRhbnd6ZmZhdmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjkwNzEsImV4cCI6MjA4MDgwNTA3MX0.mAdXxSIcbql24BywyKPeNA6bOTXToL8yLpmblsbBfSQ",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY",
         "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
@@ -20,6 +22,8 @@
         "buildConfiguration": "Release"
       },
       "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://osfpvrbnudanwzffavem.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zZnB2cmJudWRhbnd6ZmZhdmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjkwNzEsImV4cCI6MjA4MDgwNTA3MX0.mAdXxSIcbql24BywyKPeNA6bOTXToL8yLpmblsbBfSQ",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY",
         "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
@@ -29,6 +33,8 @@
         "buildConfiguration": "Release"
       },
       "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://osfpvrbnudanwzffavem.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zZnB2cmJudWRhbnd6ZmZhdmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjkwNzEsImV4cCI6MjA4MDgwNTA3MX0.mAdXxSIcbql24BywyKPeNA6bOTXToL8yLpmblsbBfSQ",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY",
         "GOOGLE_MAPS_API_KEY": "$GOOGLE_MAPS_API_KEY"
       }
