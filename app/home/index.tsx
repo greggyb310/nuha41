@@ -105,14 +105,8 @@ export default function HomeScreen() {
 
         <View style={styles.quickActions}>
           <Button
-            title="Talk to Coach"
-            onPress={() => router.push('/coach')}
-            style={styles.actionButton}
-          />
-          <Button
             title="Create Excursion"
             onPress={() => router.push('/excursions/create')}
-            variant="secondary"
             style={styles.actionButton}
           />
           <Button
