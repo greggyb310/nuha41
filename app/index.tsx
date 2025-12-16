@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: typography.sizes['4xl'],
     fontWeight: typography.weights.bold,
-    color: colors.primary,
+    color: '#9333EA',
     marginBottom: spacing.xl,
     textAlign: 'center',
   },
